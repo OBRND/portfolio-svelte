@@ -33,7 +33,7 @@ jobs:
               const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
               const { data, error } = await supabase
-                .from('your_table')  // CHANGE THIS to your actual table name
+                .from('posts')
                 .select('*')
                 .limit(1);
 
