@@ -6,4 +6,3 @@ const supabaseUrl = PUBLIC_SUPABASE_URL;
 const supabaseKey = PUBLIC_SUPABASE_ANON_KEY;
 
 export const supabase = createBrowserClient(supabaseUrl, supabaseKey);
-        
