@@ -88,6 +88,7 @@
 		<p>Manage your project portfolio</p>
 	</header>
 
+	<!-- Success/Error Messages -->
 	{#if form?.success}
 		<div class="alert alert-success">
 			{form.message || 'Operation completed successfully!'}
@@ -100,6 +101,7 @@
 		</div>
 	{/if}
 
+	<!-- Add New Project Button -->
 	<div class="actions-bar">
 		<button
 			class="btn btn-primary"
@@ -110,6 +112,7 @@
 		</button>
 	</div>
 
+	<!-- Add New Project Form -->
 	{#if $showAddForm}
 		<div class="form-card">
 			<h2>Add New Project</h2>
@@ -225,6 +228,7 @@
 		</div>
 	{/if}
 
+	<!-- Projects List -->
 	<div class="projects-list">
 		<h2>Current Projects ({data.projects.length})</h2>
 
@@ -232,15 +236,18 @@
 			<div class="empty-state">
 				<p>No projects found. Add your first project above!</p>
 			</div>
-		{:else}
+		{:else} <!-- FIX: Corrected syntax here -->
 			{#each data.projects as project, index (project.id || `temp-${index}`)}
 				<div class="project-card">
+					<!-- Conditionally render Edit Form or Display Mode -->
 					{#if $editingProject?.id === project.id}
+						<!-- Edit Form - Dynamically choose action based on project.id -->
 						<form
 							method="POST"
 							action={project.id && !String(project.id).startsWith('temp-') ? '?/update' : '?/create'}
 							use:enhance={handleSubmit}
 						>
+							<!-- Only include hidden ID input if it's a real, non-temporary ID -->
 							{#if project.id && !String(project.id).startsWith('temp-')}
 								<input type="hidden" name="id" value={project.id} />
 							{/if}
@@ -350,6 +357,7 @@
 							</div>
 						</form>
 					{:else}
+						<!-- Display Mode -->
 						<div class="project-header">
 							<div class="project-info">
 								<h3>{project.title}</h3>
@@ -411,21 +419,24 @@
 							</button>
 
 							<form method="POST" action="?/delete" use:enhance={handleSubmit} style="display: inline;">
-								<input type="hidden" name="id" value={project.id} />
+								<input type="hidden" name="id" value={project.orders} />
 								<button
-									type="button"
+									type="submit"
 									class="btn btn-danger"
 									disabled={$isSubmitting}
 									onclick={(e) => {
+										// These logs will correctly fire when the button is clicked,
+										// before the confirmation dialog appears.
+										console.log(project.orders);
+										console.log("deleting projects (client-side before confirm)");
 										if (!confirm('Are you sure you want to delete this project?')) {
-											e.preventDefault();
-										} else {
-											// The use:enhance action needs to be triggered by the form submission itself,
-											// not by manually calling formElement.submit() inside an onclick.
-											// Just let the confirm() return true and the button will submit the form.
-											// Set submitting state here as well.
-											isSubmitting.set(true);
+											e.preventDefault(); // Prevent form submission if user cancels
+											console.log("Delete cancelled (client-side)"); // This log will now appear on cancel
 										}
+										// If the user confirms, the form will proceed to submit naturally
+										// because the button type is "submit". SvelteKit's use:enhance
+										// will then intercept it and call handleSubmit.
+										// The `isSubmitting` state will be managed by handleSubmit.
 									}}
 								>
 									{$isSubmitting ? 'Deleting...' : 'Delete'}
