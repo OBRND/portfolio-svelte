@@ -4,7 +4,7 @@
   import Skills from './sections/Skills.svelte';
   import Services from './sections/service.svelte';
   import Projects from './sections/Projects.svelte';
-  import Contact from './sections/Contact.svelte';
+  import Contact from './sections/contact/+page.svelte';
 </script>
 
 <div class="sections-container">
@@ -33,6 +33,7 @@
   .sections-container {
     display: flex;
     flex-direction: column;
+    background-color: var(--bg-primary);
   }
   
   .section {

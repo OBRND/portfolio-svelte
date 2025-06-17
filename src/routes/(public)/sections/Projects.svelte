@@ -367,9 +367,9 @@
 		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 		width: 100%;
 		overflow-x: hidden;
-		color: var(--text-dark);
+		color: var(--text-color);
 		line-height: 1.6;
-		background-color: var(--bg-light-purple);
+		background-color: var(--bg-primary);
 	}
 
 	.section-content-wrapper {
@@ -569,7 +569,7 @@
 	/* Project Details */
 	.project-details {
 		width: 100%;
-		background-color: var(--bg-white);
+		background-color: var(--bg-secondary);
 		border-radius: 0 0 var(--radius) var(--radius);
 		padding: 1.5rem;
 		box-sizing: border-box;

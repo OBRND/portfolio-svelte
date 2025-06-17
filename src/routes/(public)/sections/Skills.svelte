@@ -272,10 +272,10 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     width: 100%;
     overflow-x: hidden;
-    color: var(--text-dark);
+    color: var(--text-color);
     line-height: 1.6;
     padding: 0;
-    background-color: var(--bg-light-purple); /* Overall light grey background for the toolkit page */
+    background-color: var(--bg-primary); /* Overall light grey background for the toolkit page */
   }
 
   .section-content-wrapper {
@@ -283,6 +283,7 @@
     margin: 0 auto;
     padding: 0 1.5rem; /* Horizontal padding for content */
     box-sizing: border-box;
+    background-color: var(--bg-primary);
   }
 
   /* Common section title styles (used for "My Toolkits" and "Why Flutter/Svelte" titles) */
@@ -300,7 +301,7 @@
 
   /* Styling for the "MY TOOLKITS" section (greyish background) */
   .my-toolkits-card-section {
-    background-color: var(--bg-light-purple); /* Greyish background for the section */
+    background-color: var(--bg-primary); /* Greyish background for the section */
     border-radius: 0; /* No border-radius */
     box-shadow: none; /* No shadow */
     padding: 2.5rem 0 3rem 0; /* Reduced padding inside the section */
@@ -401,10 +402,10 @@
   /* Why Tech Section (Why Flutter & Why Svelte) */
   .why-tech-section {
     padding: 4rem 0; /* Reduced vertical padding for this section */
-    background-color: var(--bg-light-purple); /* Light purple background for this section */
+    background-color: var(--bg-primary); /* Light purple background for this section */
     width: 100%;
     box-sizing: border-box;
-    color: var(--text-dark); /* Default text for this section */
+    color: var(--text-color); /* Default text for this section */
   }
 
   .why-tech-container {
@@ -419,7 +420,7 @@
     padding: var(--card-padding);
     border-radius: var(--card-border-radius);
     text-align: center; /* Center content on mobile */
-    background-color: var(--bg-white); /* White background for cards */
+    background-color: var(--bg-secondary); /* White background for cards */
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1); /* Lighter shadow for white cards */
     transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
     display: flex;
@@ -513,12 +514,12 @@
     font-size: 1.05rem; /* Slightly reduced font size */
     font-weight: 600;
     margin: 0 0 0.2rem 0; /* Reduced margin */
-    color: var(--text-dark); /* Title color for white background */
+    color: var(--text-color); /* Title color for white background */
   }
 
   .why-point p {
     font-size: 0.9rem; /* Reduced font size */
-    color: var(--text-medium); /* Description color for white background */
+    color: var(--text-color); /* Description color for white background */
     margin: 0;
     line-height: 1.4; /* Reduced line height */
   }

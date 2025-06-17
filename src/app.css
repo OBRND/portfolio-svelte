@@ -1,11 +1,8 @@
-:root {
+:root.light {
   /* Color System */
-  --color-primary: #6C5CE7;
-  --color-accent: #8A49AF;
-  --color-text: #213547;
-  --color-text-secondary: #555555;
-  --color-background: #FFFFFF;
-  
+  --text-color: #111;
+  --bg-color: #fff;
+
   /* Typography */
   font-family: Inter, system-ui, -apple-system, sans-serif;
   line-height: 1.5;
@@ -19,6 +16,11 @@
   --font-size-3xl: 2rem;
   --font-size-4xl: 3.5rem;
 }
+:root.dark {
+  --text-color: #eee;
+  --bg-color: #121212;
+  --bg-secondary: #444343;
+}
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
@@ -29,11 +31,10 @@
 }
 
 body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
   margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  background-color: var(--color-background);
-  color: var(--color-text);
+  font-family: system-ui, sans-serif;
 }
 
 h1, h2, h3 {

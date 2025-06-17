@@ -1,4 +1,8 @@
 <script>
+import '../../app.css';  
+import '$lib/themes'; // subscribe immediately
+import Toggle from '$lib/components/ThemeToggle.svelte'; // import theme toggle component
+
   // Smooth scroll function
   function scrollToSection(id) {
     const element = document.getElementById(id);
@@ -7,7 +11,6 @@
     }
   }
 </script>
-
 <div class="app">
   <header class="navbar">
     <nav>
@@ -16,6 +19,7 @@
         <li><a href="#skills" on:click|preventDefault={() => scrollToSection('skills')}>Skills</a></li>
         <li><a href="#projects" on:click|preventDefault={() => scrollToSection('projects')}>Projects</a></li>
         <li><a href="#contact" on:click|preventDefault={() => scrollToSection('contact')}>Contact</a></li>
+        <li><Toggle/></li>
     </ul>
     </nav>
   </header>

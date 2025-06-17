@@ -102,24 +102,16 @@ import AnimatedCard from '$lib/components/animatedCards.svelte';
 </div>
 
 <style>
-  /* Define CSS variables for consistency */
-  :root {
-      --text-dark: #2c3e50;
-      --bg-light-purple: #f8f4fa;
-      --bg-white: #ffffff;
-      --card-border-radius: 12px;
-      --svelte-orange: #FF3E00; /* Added Svelte orange for underline */
-  }
 
   /* Base styles for the new component */
   .services-page-section {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     width: 100%;
     overflow-x: hidden;
-    color: var(--text-dark);
+    color: var(--text-color);
     line-height: 1.6;
     padding: 0;
-    background-color: var(--bg-light-purple); /* Overall background for the services page */
+    background-color: var(--bg-primary); /* Overall background for the services page */
   }
 
   .section-content-wrapper {
@@ -133,7 +125,7 @@ import AnimatedCard from '$lib/components/animatedCards.svelte';
   .services-main-header-section {
       padding-top: 2rem; /* Reduced space above the main header */
       padding-bottom: 1rem; /* Reduced space below the main header */
-      background-color: var(--bg-light-purple); /* Consistent with toolkit header background */
+      background-color: var(--bg-primary); /* Consistent with toolkit header background */
   }
 
   /* Common section title styles */
@@ -179,7 +171,7 @@ import AnimatedCard from '$lib/components/animatedCards.svelte';
   /* Services Grid Section */
   .services-grid-section {
     padding: 1.5rem 0 3rem 0; /* Reduced padding around the grid */
-    background-color: var(--bg-light-purple); /* Consistent background */
+    background-color: var(--bg-primary); /* Consistent background */
   }
 
   .card-grid {
