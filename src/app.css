@@ -2,6 +2,7 @@
   /* Color System */
   --text-color: #111;
   --bg-color: #fff;
+  --bg-secondary: #f0f0f0;
 
   /* Typography */
   font-family: Inter, system-ui, -apple-system, sans-serif;

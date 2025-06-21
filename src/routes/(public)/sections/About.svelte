@@ -1,29 +1,11 @@
 <script lang="ts">
-  // Import onMount for Svelte lifecycle management
-  import { onMount } from 'svelte';
-  // Import the lottie-web library directly. This assumes it's installed via npm/yarn.
-  import lottie from 'lottie-web';
-
-  // Declare a variable to hold the reference to the Lottie container div
-  let lottieContainer: HTMLDivElement;
-
-  onMount(() => {
-    // Initialize Lottie animation
-    lottie.loadAnimation({
-      container: lottieContainer, // The DOM element to render the animation in
-      renderer: 'svg', // Render as SVG for scalability
-      loop: true, // Loop the animation
-      autoplay: true, // Autoplay the animation
-      path: '/Animation.json' // Path to your Lottie JSON file (ensure this path is correct)
-    });
-  });
+  let src = '/ob.png';
 </script>
 
 <div class="about-me-page">
   <header class="top-section">
     <div class="avatar-container">
-      <!-- This div will now host your Lottie animation -->
-      <div bind:this={lottieContainer} class="lottie-animation-container"></div>
+      <img {src} alt="OB" class="circular-image"/>
     </div>
     <div class="intro-text-container">
       <h1 class="name-heading">Hello, I'm Obsan</h1>
@@ -69,7 +51,6 @@
     --text-light: #f0f0f0; /* Lighter text for dark backgrounds */
     --bg-light-purple: #f8f4fa;
     --bg-white: #ffffff;
-    /* Removed variables specific to the toolkit/why sections as they are in the new file */
   }
 
   .about-me-page {
@@ -77,7 +58,6 @@
     width: 100%;
     overflow-x: hidden;
     background-color: var(--bg-color);
-    /* color: var(--text-dark); */
     line-height: 1.6;
     padding: 0;
   }
@@ -118,22 +98,20 @@
     flex-shrink: 0;
     width: 300px; /* Increased size for mobile */
     height: 300px; /* Increased size for mobile */
-    border-radius: 100%; /* Maintains the circular background */
+    border-radius: 50%; /* Make the container circular */
     display: flex;
     justify-content: center;
     align-items: center;
-    background: linear-gradient(135deg, var(--flutter-blue), var(--svelte-orange)); /* Gradient using new theme colors */
+    background: var(--bg-secondary);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden; /* Ensure image is clipped to the circle */
   }
 
-  /* New Lottie container styling */
-  .lottie-animation-container {
-    width: 120%; /* Lottie takes 80% of avatar-container's width */
-    height: 120%; /* Lottie takes 80% of avatar-container's height */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    /* Removed border-radius here to ensure Lottie isn't clipped if it's not perfectly circular */
+  .circular-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Ensures the image covers the circular area without distortion */
+    border-radius: 50%; /* Make the image itself circular */
   }
 
   .intro-text-container {
@@ -237,28 +215,28 @@
   @media (min-width: 768px) {
     .top-section {
       flex-direction: row;
-      align-items: center;
-      padding: 4rem 2rem 5rem 2rem;
+      align-items: flex-start; /* Align content to top */
+      padding: 4rem 2rem 2rem; /* Reduced bottom padding */
       gap: 4rem;
+      min-height: 90vh;
+      justify-content: center;
     }
 
     .avatar-container {
-      max-width: 260px; /* Increased size for tablet */
-      max-height: 260px; /* Increased size for tablet */
-    }
-
-    .lottie-animation-container {
-      width: 80%;
-      height: 80%;
+      align-self: center;
+      flex: 0 0 35%; /* Takes 35% of width */
+      max-width: 35%;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1/1; /* Maintain square shape */
     }
 
     .intro-text-container {
-      flex: 1 1 60%;
-      text-align: left;
-      max-width: 100%;
-      margin: 0;
+      flex: 0 0 60%; /* Takes 60% of width (leaving 5% for gap) */
+      max-width: 60%;
+      align-self: center; /* Center vertically within flex container */
     }
-
+    
     .name-heading {
       font-size: 4.5rem;
       text-align: left;
@@ -297,31 +275,23 @@
   /* Desktop (>= 1024px) */
   @media (min-width: 1024px) {
     .top-section {
-      padding: 5rem 3rem 10rem 3rem;
+      padding: 0rem 3rem 3rem; /* Reduced bottom padding */
       gap: 6rem;
+      min-height: 90vh;
     }
 
     .avatar-container {
-      max-width: 320px; /* Increased size for desktop */
-      max-height: 320px; /* Increased size for desktop */
-    }
-
-    .lottie-animation-container {
-      width: 80%;
-      height: 80%;
-    }
-
-    .intro-text-container {
-      flex: 1 1 60%;
+      align-self: center;
+      max-width: 450px; /* Slightly larger for desktop */
+      max-height: 450px;
     }
 
     .name-heading {
-      font-size: 5.5rem;
+      font-size: 5rem; /* Slightly reduced for better fit */
     }
 
     .subtitle {
-      font-size: 5rem;
-      margin-bottom: 0.5rem;
+      font-size: 4rem; /* Slightly reduced for better fit */
     }
 
     .summary-simple {
