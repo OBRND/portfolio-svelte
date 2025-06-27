@@ -7,7 +7,7 @@
   import Contact from './sections/contact/+page.svelte';
 </script>
 
-<div class="sections-container">
+<div>
   <section id="about" class="section">
     <About />
   </section>
@@ -16,7 +16,7 @@
     <Skills />
   </section>
   
-  <section id="projects" class="section">
+  <section id="services" class="section">
     <Services />
   </section>
  
@@ -30,18 +30,11 @@
 </div>
 
 <style>
-  .sections-container {
-    display: flex;
-    flex-direction: column;
-    background-color: var(--bg-primary);
-  }
   
   .section {
     min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding-left: 2rem;
-    padding-right: 2rem;
   }
 </style>

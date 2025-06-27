@@ -23,7 +23,7 @@ function scrollToSection(id) {
 function updateActiveSection() {
   if (!browser) return; // Guard against SSR
   
-  const sections = ['about', 'skills', 'projects', 'contact'];
+  const sections = ['about', 'skills', 'services', 'projects', 'contact'];
   const offset = 100; // Offset for navbar height
   
   for (let i = sections.length - 1; i >= 0; i--) {
@@ -80,11 +80,10 @@ onMount(() => {
 <div class="app">
   <!-- Footer positioned behind everything with proper height constraints -->
   <footer class="background-footer">
-    <div class="footer-background"></div>
     <div class="footer-content">
       <div class="footer-main">
         <div class="footer-brand">
-          <h2>Portfolio</h2>
+          <h2>Obsan's Portfolio</h2>
           <div class="contact-social-container">
             <div class="contact-info">
               <div class="contact-item">
@@ -141,7 +140,7 @@ onMount(() => {
       
       <div class="footer-bottom">
         <div class="footer-copyright">
-          <p>© {new Date().getFullYear()} Portfolio. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Obsan's Portfolio.</p>
         </div>
         <div class="footer-tech">
           <span class="made-with">Made with <span class="svelte-text">Svelte</span></span>
@@ -173,6 +172,16 @@ onMount(() => {
               Skills
             </a>
           </li>
+          <li>
+            <a 
+              href="#services" 
+              class:active={activeSection === 'services'}
+              on:click|preventDefault={() => scrollToSection('services')}
+            >
+              Services
+            </a>
+          </li>
+          
           <li>
             <a 
               href="#projects" 
@@ -214,52 +223,25 @@ onMount(() => {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 320px; /* Fixed height for desktop */
+    padding-top: 20px ;
+    height: 360px; /* Fixed height for desktop */
     z-index: 1;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
   }
-
-  .footer-background {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    /* Modern tech background with circuit patterns and orange accents */
-    background-image: url('https://images.unsplash.com/photo-1518709268805-4e9042af2176?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2125&q=80'),
-                      linear-gradient(45deg, rgba(255, 140, 0, 0.1) 0%, rgba(255, 69, 0, 0.05) 100%);
-    background-size: cover, cover;
-    background-position: center, center;
-    background-attachment: fixed, fixed;
-    background-blend-mode: overlay;
-  }
-
-  .footer-background::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-      radial-gradient(circle at 20% 80%, rgba(255, 140, 0, 0.3) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, rgba(255, 69, 0, 0.2) 0%, transparent 50%),
-      linear-gradient(135deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.6) 100%);
-  }
-
+  
   .footer-content {
     position: relative;
     background: linear-gradient(
       135deg,
-      rgba(0, 0, 0, 0.85) 0%,
-      rgba(0, 0, 0, 0.75) 100%
+      rgba(12, 12, 12, 0.85) 0%,
+      rgba(49, 13, 1, 0.877) 100%
     );
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
     color: white;
-    padding: 2rem;
+    padding: 4rem 2rem 2rem 2rem;
     display: flex;
     flex-direction: column;
     gap: 2rem;
@@ -274,6 +256,7 @@ onMount(() => {
     z-index: 10;
     background: var(--bg-color, #ffffff);
     min-height: 100vh;
+    border-radius: 1rem;
   }
 
   /* Glossy/Blurred Navbar with size transitions and active indicators */
@@ -381,7 +364,7 @@ onMount(() => {
   .footer-brand {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem;
     flex: 1;
   }
 
@@ -501,7 +484,8 @@ onMount(() => {
   /* Responsive Design with mobile space optimization */
   @media (max-width: 768px) {
     .background-footer {
-      height: 280px;
+      padding-top: 20px;
+      height: 360px;
     }
 
     nav ul {
@@ -514,7 +498,7 @@ onMount(() => {
     }
 
     .footer-content {
-      padding: 1.5rem;
+      padding: 3rem 1.5rem;
     }
 
     .footer-main {
@@ -548,16 +532,20 @@ onMount(() => {
     }
 
     .footer-bottom {
-      flex-direction: column;
+      flex-direction: row;
       gap: 0.8rem;
       text-align: center;
       padding-top: 1rem;
+    }
+    .sliding-content{
+      border-radius: 1rem;
     }
   }
 
   @media (max-width: 480px) {
     .background-footer {
-      height: 260px; /* Reduced height for better mobile fit */
+      padding-top: 0px;
+      height: 333px; /* Reduced height for better mobile fit */
     }
 
     nav ul {
@@ -579,7 +567,7 @@ onMount(() => {
     }
 
     .footer-content {
-      padding: 1rem;
+      padding: 3rem 2rem;
     }
 
     .footer-brand h2 {

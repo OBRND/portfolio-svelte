@@ -14,7 +14,7 @@
 	let selectedProject = $state(null);
 	let isModalOpen = $state(false);
 	let autoplayInterval;
-
+	let modalContainer: HTMLDivElement;
 	// Animation
 	const translateX = tweened(0, { duration: 600, easing: cubicOut });
 
@@ -134,6 +134,14 @@
 	// Lifecycle
 	onMount(() => {
 		fetchProjects();
+		document.body.appendChild(modalContainer);
+    
+    return () => {
+      // Cleanup by removing it when component unmounts
+      if (modalContainer.parentNode) {
+        document.body.removeChild(modalContainer);
+      }
+    };
 	});
 
 </script>
@@ -216,7 +224,6 @@
 													<p class="project-subtitle">{project.subtitle}</p>
 												</div>
 												<div class="project-status">
-													<span class="status-badge">{project.status}</span>
 													<span class="project-year">{project.year}</span>
 												</div>
 											</div>
@@ -289,9 +296,10 @@
 	</section>
 
 	<!-- Modal -->
-	{#if isModalOpen && selectedProject}
-		<div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1" onclick={closeModal}>
-			<div class="modal-content" onclick={(event) => event.stopPropagation()}>
+	<div bind:this={modalContainer} style="position: fixed; z-index: 1000; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
+		{#if isModalOpen && selectedProject}
+		  <div class="modal-overlay" role="dialog" aria-modal="true" onclick={closeModal}>
+			<div class="modal-content" onclick={(e) => e.stopPropagation()}>
 				<button class="modal-close" onclick={closeModal} aria-label="Close modal">
 					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<line x1="18" y1="6" x2="6" y2="18"/>
@@ -341,25 +349,63 @@
 			</div>
 		</div>
 	{/if}
+	</div>
 </div>
-
 <style>
 	/* Variables */
 	:root {
+		--image-padding: 1.5rem;
+		--radius: 12px;
+	}
+
+	:root.light {
+		/* Text Colors */
 		--text-dark: #2c3e50;
 		--text-medium: #555;
-		--bg-light-purple: #f8f4fa;
+		--text-light: #f0f0f0;
+		
+		/* Background Colors */
+		--bg-primary: #ffffff;
+		--bg-secondary: #f8f9fa;
 		--bg-white: #ffffff;
+		
+		/* Accent Colors */
 		--svelte-orange: #FF3E00;
+		--flutter-blue: #0f64aa;
+		
+		/* Component Colors */
 		--border-light: #e0e0e0;
-		--tag-bg: #f0f0f0;
+		--tag-bg: #ffffff;
 		--tag-text: #666;
 		--tech-bg: #e0f2fe;
 		--tech-text: #0277bd;
-		--image-padding: 1.5rem;
 		--error-red: #dc2626;
 		--shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-		--radius: 12px;
+	}
+
+	:root.dark {
+		/* Text Colors */
+		--text-dark: #e0e0e0;
+		--text-medium: #b0b0b0;
+		--text-light: #333333;
+		
+		/* Background Colors */
+		--bg-primary: #121212;
+		--bg-secondary: #1e1e1e;
+		--bg-white: #1e1e1e;
+		
+		/* Accent Colors */
+		--svelte-orange: #FF6B3D;
+		--flutter-blue: #3c8bd4;
+		
+		/* Component Colors */
+		--border-light: #444444;
+		--tag-bg: #333333;
+		--tag-text: #cccccc;
+		--tech-bg: #1a3d5c;
+		--tech-text: #7fc1ff;
+		--error-red: #f87171;
+		--shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 	}
 
 	/* Base Styles */
@@ -367,7 +413,7 @@
 		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 		width: 100%;
 		overflow-x: hidden;
-		color: var(--text-color);
+		color: var(--text-dark);
 		line-height: 1.6;
 		background-color: var(--bg-primary);
 	}
@@ -386,7 +432,7 @@
 	}
 
 	.centered-title {
-		font-size: 1.3rem;
+		font-size: 1.8rem;
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 1px;
@@ -554,7 +600,7 @@
 		left: 0;
 		right: 0;
 		height: 80px;
-		background: linear-gradient(to top, var(--bg-light-purple), transparent);
+		background: linear-gradient(to top, var(--bg-secondary), transparent);
 		pointer-events: none;
 	}
 
@@ -594,7 +640,7 @@
 		font-weight: 800;
 		margin-bottom: 0.25rem;
 		color: var(--text-dark);
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: var(--flutter-blue);
 		-webkit-background-clip: text;
 		-webkit-text-fill-color: transparent;
 		background-clip: text;
@@ -608,29 +654,22 @@
 		margin: 0;
 	}
 
-	.project-status {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-end;
-		gap: 0.25rem;
-	}
+.project-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
 
-	.status-badge {
-		padding: 0.25rem 0.75rem;
-		border-radius: 12px;
-		font-size: 0.75rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		background-color: #dbeafe;
-		color: #1e40af;
-	}
-
-	.project-year {
-		font-size: 0.8rem;
-		color: var(--text-medium);
-		font-weight: 500;
-	}
+.project-year {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  background-color: var(--tech-bg);
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  /* Optional: Add a subtle border */
+  border: 1px solid var(--border-light);
+}
 
 	.details-group {
 		margin-bottom: 1.5rem;
@@ -670,8 +709,8 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.5rem;
-		background-color: var(--svelte-orange);
-		color: var(--bg-white);
+		background-color: #cc4518;
+		color: white;
 		padding: 0.8rem 1.5rem;
 		border-radius: 25px;
 		text-decoration: none;
@@ -772,33 +811,30 @@
 
 	/* Modal */
 	.modal-overlay {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background-color: rgba(0, 0, 0, 0.8);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 1000;
-		padding: 1rem;
-		backdrop-filter: blur(4px);
-		animation: fadeIn 0.3s ease-out;
-	}
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    pointer-events: all;
+    backdrop-filter: blur(4px);
+  }
 
-	.modal-content {
-		background-color: var(--bg-white);
-		border-radius: 16px;
-		max-width: 600px;
-		width: 100%;
-		max-height: 90vh;
-		overflow-y: auto;
-		position: relative;
-		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-		animation: modalSlideIn 0.3s ease-out;
-	}
-
+  .modal-content {
+    background-color: var(--bg-white);
+    border-radius: 16px;
+    width: min(600px, 90vw);
+    max-height: min(80vh, 100vh - 2rem);
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    pointer-events: all;
+  }
 	.modal-close {
 		position: absolute;
 		top: 1rem;
@@ -840,7 +876,7 @@
 		font-weight: 800;
 		margin-bottom: 0.5rem;
 		color: var(--text-dark);
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: linear-gradient(135deg, var(--flutter-blue), #764ba2);
 		-webkit-background-clip: text;
 		-webkit-text-fill-color: transparent;
 		background-clip: text;
@@ -879,7 +915,7 @@
 		align-items: center;
 		gap: 0.75rem;
 		background-color: #24292e;
-		color: var(--bg-white);
+		color: white;
 		padding: 1rem 2rem;
 		border-radius: 30px;
 		text-decoration: none;
@@ -939,7 +975,6 @@
 		}
 
 		.centered-title {
-			font-size: 1.1rem;
 			margin-bottom: 1rem;
 		}
 
@@ -1129,7 +1164,7 @@
 		}
 
 		.centered-title {
-			font-size: 1.5rem;
+			font-size: 2.5rem;
 		}
 
 		.carousel-section {

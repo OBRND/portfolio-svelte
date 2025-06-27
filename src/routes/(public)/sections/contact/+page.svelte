@@ -141,7 +141,7 @@
         --bg-light-purple: #f8f4fa;
         --bg-white: #ffffff;
         --border-color: #e0e0e0;
-        --input-border: #d1d5db;
+        /* --input-border: #909192; */
         --focus-border: #3b82f6;
         --shadow-color: rgba(0, 0, 0, 0.1);
     }
@@ -153,6 +153,7 @@
       color: var(--text-color);
       line-height: 1.6;
       background-color: var(--bg-primary);
+      border-radius: 2rem;
     }
   
     .section-content-wrapper {
@@ -209,11 +210,11 @@
     }
   
     .form-card {
-      background: var(--bg-white);
+      background: var(--bg-form); /* Lighter background for contrast */
       border-radius: 12px;
       padding: 2.5rem; /* Increased padding */
       box-shadow: 0 4px 15px var(--shadow-color); /* Stronger shadow */
-      border: 1px solid var(--border-color);
+      /* border: 1px solid var(--border-color); */
     }
   
     /* Alerts */
@@ -253,7 +254,7 @@
   
     .form-group label {
       font-weight: 600;
-      color: var(--text-dark);
+      color: var(--text-color);
       margin-bottom: 0.5rem;
       font-size: 0.95rem;
     }
@@ -271,7 +272,7 @@
       font-size: 1rem;
       color: var(--text-dark);
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
-      background-color: var(--bg-white);
+      background-color: var(--bg-inner-form);
     }
   
     .form-group input::placeholder,
@@ -401,6 +402,7 @@
   
     /* Responsive Adjustments */
     @media (min-width: 768px) {
+      
       .contact-header-section {
         padding: 4rem 0 2rem 0;
       }
@@ -411,13 +413,13 @@
         font-size: 1.2rem;
       }
       .contact-form-section {
-        padding: 2rem 0 5rem 0;
+        padding: 0rem 0 5rem 0;
       }
       .form-card {
-        padding: 3rem;
+        padding: 2.0rem;
       }
       .contact-form {
-        gap: 1.5rem;
+        gap: 0.5rem;
       }
     }
   
@@ -462,6 +464,16 @@
       .btn-icon {
         width: 18px;
         height: 18px;
+      }
+      
+      .contact-form-section {
+        padding: 0rem 0 5rem 0;
+      }
+      .form-card {
+        padding: 1.5rem;
+      }
+      .section-content-wrapper {
+        padding: 0.5rem;
       }
     }
   </style>

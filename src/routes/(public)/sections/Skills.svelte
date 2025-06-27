@@ -1,126 +1,158 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  // Use type import for SSR safety, assuming globe.svelte is the correct path
+  // 1. Ensure the theme store is imported
+  import { theme } from '../../../lib/stores/theme'; // Adjust path if needed
   import type ReactGlobe from '$lib/components/globe.svelte';
 
-  // Placeholder data for the tech stack
+  const simpleIconSlugs = [
+    "javascript",
+    "python",
+    "flutter", // Use 'flutter' for the simple-icon
+    "css3",
+    "android",
+    "git",
+    "html5",
+    "googlecloud",
+    "github",
+    "figma",
+    "sqlite",
+    "postgresql", // Best simple-icon match for SQL
+    "supabase",
+    "vercel",
+    "firebase",
+    "svelte",
+    "cplusplus"
+    ];
+
+  // For custom images (SVGs). Each object will contain the path and a unique identifier for mapping.
+  const customImageData = [
+    { src: '/java.svg', id: 'java', alt: 'Java Logo' },
+    { src: '/flutter_flow.webp', id: 'flutterflow', alt: 'flutterflow Logo' }, // Assuming you have a custom 'web' icon now
+    { src: '/hive.webp', id: 'hive-logo', alt: 'Hive Logo' },
+  ];
+
   const techStack: string[] = [
-    "Flutter",
-    "TypeScript",
-    "Svelte / SvelteKit",
-    "React / Next.js",
-    "Node.js",
-    "HTML5 & CSS3", // Grouped for simplicity, can be split if needed
-    "Tailwind CSS",
-    "Git & GitHub", // Grouped
-    "REST APIs",
-    "GraphQL",
-    "Docker",
+    "JavaScript",
+    "Java",
+    "Python",
+    "Flutter",        // Simple icon (if you want both Flutter Dash and generic Flutter)
+    "CSS",
+    "Android Development",
+    "Git",
+    "HTML",
+    "Google Cloud",
+    "Hive",           // Custom icon
+    "GitHub",
     "Figma",
-    // Add more or modify as needed
+    "FlutterFlow",
+    "SQLite",
+    "PostgreSQL",
+    "Supabase",
+    "Vercel",
+    "Firebase",
+    "Svelte",
+    "C++"
   ];
 
-  // Define colors for each technology for dynamic hover effects
   const techColors = {
-    "Flutter": { primary: "#3a9ae9", text: "#323330" }, // Yellow, dark text
-    "TypeScript": { primary: "#3178C6", text: "#FFFFFF" }, // Blue, white text
-    "Svelte / SvelteKit": { primary: "#FF3E00", text: "#FFFFFF" }, // Svelte Orange, white text
-    "React / Next.js": { primary: "#61DAFB", text: "#20232A" }, // React Blue, dark text
-    "Node.js": { primary: "#339933", text: "#FFFFFF" }, // Node Green, white text
-    "HTML5 & CSS3": { primary: "#E34F26", text: "#FFFFFF" }, // HTML5 Orange, white text
-    "Tailwind CSS": { primary: "#06B6D4", text: "#FFFFFF" }, // Teal, white text
-    "Git & GitHub": { primary: "#F05033", text: "#FFFFFF" }, // Git Red, white text
-    "REST APIs": { primary: "#6C757D", text: "#FFFFFF" }, // Grey, white text
-    "GraphQL": { primary: "#E10098", text: "#FFFFFF" }, // GraphQL Pink, white text
-    "Docker": { primary: "#2496ED", text: "#FFFFFF" }, // Docker Blue, white text
-    "Figma": { primary: "#A259FF", text: "#FFFFFF" } // Figma Purple, white text
+    "JavaScript": { primary: "#F7DF1E", text: "#323330" },
+    "Flutter Dash": { primary: "#02569B", text: "#FFFFFF" },
+    "Java": { primary: "#007396", text: "#FFFFFF" },
+    "Python": { primary: "#3776AB", text: "#FFFFFF" },
+    "Web Development": { primary: "#E34F26", text: "#FFFFFF" },
+    "Flutter": { primary: "#02569B", text: "#FFFFFF" },
+    "CSS": { primary: "#1572B6", text: "#FFFFFF" },
+    "Android Development": { primary: "#3DDC84", text: "#2C3E50" },
+    "Git": { primary: "#F05033", text: "#FFFFFF" },
+    "HTML": { primary: "#E34F26", text: "#FFFFFF" },
+    "Google Cloud": { primary: "#4285F4", text: "#FFFFFF" },
+    "Hive": { primary: "#02569B", text: "#FFFFFF" },
+    "GitHub": { primary: "#181717", text: "#FFFFFF" }, // Default light mode GitHub
+    "Figma": { primary: "#F24E1E", text: "#FFFFFF" },
+    "FlutterFlow": { primary: "#492fdd", text: "#FFFFFF" },
+    "SQLite": { primary: "#003B57", text: "#FFFFFF" },
+    "PostgreSQL": { primary: "#4479A1", text: "#FFFFFF" },
+    "Supabase": { primary: "#3ECF8E", text: "#18181B" },
+    "Vercel": { primary: "#000000", text: "#FFFFFF" }, // Default light mode Vercel
+    "Firebase": { primary: "#FFCA28", text: "#2C3E50" },
+    "Svelte": { primary: "#FF3E00", text: "#FFFFFF" },
   };
 
-  // Helper function to get the primary color for a tech item
-  function getTechPrimaryColor(techName: string): string {
-    return techColors[techName] ? techColors[techName].primary : '#cccccc'; // Default grey if not found
+
+  function getTechPrimaryColor(techName: string, currentTheme: string): string {
+    const defaultColor = '#cccccc'; // Fallback
+
+    if (techColors[techName]) {
+     return techColors[techName].primary;
+    }
+    return defaultColor;
   }
 
-  // Helper function to get the text color for a tech item's hover state
-  function getTechHoverTextColor(techName: string): string {
-    return techColors[techName] ? techColors[techName].text : 'var(--text-dark)'; // Default dark text if not found
+  function getTechHoverTextColor(techName: string, currentTheme: string): string {
+    const defaultTextColor = 'var(--text-dark)'; // Fallback
+
+    if (techColors[techName]) {
+            return techColors[techName].text;
+    }
+    return defaultTextColor;
   }
 
-  // --- START: Globe-related imports and logic (minimal changes) ---
-  import trialImage from '$lib/assets/image.png'; // Make sure this path is correct for your image
-
-  const iconSlugsForGlobe = [
-    "typescript", "javascript", "dart", "java", "react", "flutter",
-    "android", "html5", "css3", "nodedotjs", "express", "nextdotjs",
-    "prisma", "amazonaws", "postgresql", "firebase", "nginx", "vercel",
-    "testinglibrary", "jest", "cypress", "docker", "git", "jira",
-    "github", "gitlab", "visualstudiocode", "androidstudio", "sonarqube",
-    "figma", "nonexistenticon"
-  ];
-
-  const customImagesForGlobe = [
-    trialImage,
-  ];
-
-  let currentGlobeTheme = 'dark'; // Or dynamically set based on page theme
   let ReactGlobeComponent: typeof ReactGlobe;
-
-  // New state to manage the active tech item for the "light up" effect
   let activeTechItem: string | null = null;
+  let showClickHint = true;
+  let hoverAreaActive = false;
+  let globeAreaElement: HTMLElement;
 
-  // Map simple-icons slugs to your techStack names for comparison
   const slugToTechNameMap: { [key: string]: string } = {
-    "typescript": "TypeScript",
-    "javascript": "TypeScript", // Assuming JS maps to TypeScript for simplification
-    "dart": "Flutter",
-    "java": "Flutter", // Or a more specific "Java" entry if you have it
-    "react": "React / Next.js",
+    "javascript": "JavaScript",
+    "java": "Java",
+    "python": "Python",
     "flutter": "Flutter",
-    "android": "Flutter", // Flutter builds Android apps
-    "html5": "HTML5 & CSS3",
-    "css3": "HTML5 & CSS3",
-    "nodedotjs": "Node.js",
-    "express": "Node.js", // Express is a Node.js framework
-    "nextdotjs": "React / Next.js",
-    "prisma": "Node.js", // Or a new category if you wish
-    "amazonaws": "REST APIs", // Generic for cloud services often used with APIs
-    "postgresql": "REST APIs", // Databases often connect via APIs
-    "firebase": "REST APIs", // Firebase offers REST APIs
-    "nginx": "REST APIs", // Nginx can proxy APIs
-    "vercel": "React / Next.js", // Vercel is for Next.js deployments
-    "testinglibrary": "React / Next.js", // Testing libraries are usually framework-specific
-    "jest": "React / Next.js", // Jest is for JavaScript testing
-    "cypress": "React / Next.js", // Cypress is for web testing
-    "docker": "Docker",
-    "git": "Git & GitHub",
-    "jira": "Git & GitHub", // Project management often tied to Git
-    "github": "Git & GitHub",
-    "gitlab": "Git & GitHub",
-    "visualstudiocode": "TypeScript", // IDE for coding
-    "androidstudio": "Flutter", // IDE for Android/Flutter
-    "sonarqube": "Git & GitHub", // Code quality tool, often integrated with Git
-    "figma": "Figma"
+    "css3": "CSS",
+    "android": "Android Development",
+    "git": "Git",
+    "html5": "HTML",
+    "googlecloud": "Google Cloud",
+    "hive-logo": "Hive",
+    "github": "GitHub",
+    "figma": "Figma",
+    "flutterflow": "FlutterFlow",
+    "sqlite": "SQLite",
+    "postgresql": "PostgreSQL",    
+    "supabase": "Supabase",
+    "vercel": "Vercel",
+    "firebase": "Firebase",                                               
+    "svelte": "Svelte",
+    "cplusplus": "C++"
   };
-
-  function handleIconClick(slug: string) {
-    const techName = slugToTechNameMap[slug];
+  function handleIconClick(identifier: string) {
+    const techName = slugToTechNameMap[identifier];
     if (techName && techStack.includes(techName)) {
       activeTechItem = techName;
-      // You can add a timeout here to remove the active state after a few seconds
       setTimeout(() => {
         activeTechItem = null;
-      }, 1000); // Lights up for 1 second
+      }, 1000);
     } else {
-      activeTechItem = null; // Clear if no match
+      activeTechItem = null;
     }
   }
 
+  function handleGlobeAreaMouseEnter() {
+    hoverAreaActive = true;
+  }
+
+  function handleGlobeAreaMouseLeave() {
+    hoverAreaActive = false;
+  }
+
+  function dismissClickHint() {
+    showClickHint = false;
+  }
+
   onMount(async () => {
-    // Dynamically import the component only on the client
-    const { default: LoadedReactGlobe } = await import('$lib/components/globe.svelte'); // Ensure this path is correct
+    const { default: LoadedReactGlobe } = await import('$lib/components/globe.svelte');
     ReactGlobeComponent = LoadedReactGlobe;
   });
-  // --- END: Globe-related imports and logic ---
 </script>
 
 <div class="toolkit-page-section">
@@ -128,24 +160,55 @@
     <div class="section-content-wrapper">
       <h2 class="section-title centered-title">MY TOOLKITS</h2>
 
-      <div class="globe-area">
+      <div 
+        class="globe-area"
+        bind:this={globeAreaElement}
+        on:mouseenter={handleGlobeAreaMouseEnter}
+        on:mouseleave={handleGlobeAreaMouseLeave}
+        on:click={dismissClickHint}
+      >
         {#if ReactGlobeComponent}
           <svelte:component
             this={ReactGlobeComponent}
-            iconSlugs={iconSlugsForGlobe}
-            imageArray={customImagesForGlobe}
-            theme={"light"}
+            iconSlugs={simpleIconSlugs}
+            imageArray={customImageData}
+            theme={$theme}
             onIconClick={handleIconClick}
           />
         {:else}
           <p>Loading interactive globe...</p>
         {/if}
+        
+        <!-- Click hint indicator -->
+        {#if showClickHint}
+          <div class="click-hint-overlay">
+            <div class="click-hint-content">
+              <div class="click-hint-icon">
+                <i class="fas fa-hand-pointer"></i>
+              </div>
+              <!-- Different text for different screen sizes -->
+              <p class="click-hint-text desktop-text">Click on the icons to highlight them below</p>
+              <p class="click-hint-text mobile-text">Tap on the tech icons to highlight them below!</p>
+              <div class="click-hint-pulse"></div>
+            </div>
+          </div>
+        {/if}
+
+        <!-- Hover tooltip - only for desktop -->
+        {#if hoverAreaActive}
+          <div class="hover-tooltip">
+            <i class="fas fa-mouse-pointer"></i>
+            Click on any tech icon!
+          </div>
+        {/if}
       </div>
+
       <div class="stack-grid">
         {#each techStack as tech}
           <div
             class="tech-item"
-            class:active={activeTechItem === tech} style="--hover-bg: {getTechPrimaryColor(tech)}; --hover-text: {getTechHoverTextColor(tech)};"
+            class:active={activeTechItem === tech}
+            style="--hover-bg: {getTechPrimaryColor(tech, $theme)}; --hover-text: {getTechHoverTextColor(tech, $theme)};"
           >
             <span>{tech}</span>
           </div>
@@ -158,7 +221,7 @@
     <div class="section-content-wrapper why-tech-container">
       <div class="why-tech-card flutter-theme">
         <div class="tech-icon-container">
-          <img src="/flutter-dash-illustration.png" alt="Flutter Dash" class="tech-illustration" />
+          <img src="/flutter-logo.webp" alt="Flutter Dash" class="tech-illustration" />
         </div>
         <div class="tech-intro-text">
           <h3 class="tech-name">WHY FLUTTER</h3>
@@ -205,7 +268,7 @@
 
       <div class="why-tech-card svelte-theme">
         <div class="tech-icon-container">
-          <img src="/svelte-logo-illustration.png" alt="Svelte Logo" class="tech-illustration" />
+          <img src="/svelte_logo.webp" alt="Svelte Logo" class="tech-illustration" />
         </div>
         <div class="tech-intro-text">
           <h3 class="tech-name">WHY SVELTE</h3>
@@ -273,8 +336,9 @@
     width: 100%;
     overflow-x: hidden;
     color: var(--text-color);
-    line-height: 1.6;
-    padding: 0;
+    line-height: 1.6;   
+    padding-left: 2rem;
+    padding-right: 2rem;
     background-color: var(--bg-primary); /* Overall light grey background for the toolkit page */
   }
 
@@ -284,6 +348,7 @@
     padding: 0 1.5rem; /* Horizontal padding for content */
     box-sizing: border-box;
     background-color: var(--bg-primary);
+    position: relative; /* Add positioning context for tooltip */
   }
 
   /* Common section title styles (used for "My Toolkits" and "Why Flutter/Svelte" titles) */
@@ -316,7 +381,7 @@
   }
 
   .my-toolkits-card-section .centered-title {
-    font-size: 1.3rem; /* Smaller, like "ABOUT ME" */
+    font-size: 1.8rem; /* Smaller, like "ABOUT ME" */
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -339,43 +404,52 @@
     border-radius: 2px;
   }
 
-  /* --- NEW GLOBE AREA STYLES (MINIMAL) --- */
+  /* --- GLOBE AREA STYLES - ORIGINAL LAYOUT FOR LARGE SCREENS --- */
   .globe-area {
     width: 100%; /* Take full width of its parent (.section-content-wrapper) */
     max-width: 100%;
-    height: 100%; /* Limit the max width of the globe container */
-    max-height: 100%; /* Fixed height for the globe area */
-    margin: 0 auto 0rem auto; /* Center it horizontally and add space below */
+    height: 100%; /* Original flexible height */
+    max-height: 100%; /* Original flexible max-height */
+    margin: 0 auto 2rem auto; /* Original spacing */
     display: flex; /* For centering content inside, like "Loading..." text */
     justify-content: center;
     align-items: center;
-    overflow: hidden; /* Crucial to prevent globe from overflowing its bounds */
+    position: relative; /* For absolute positioning of click hint */
     /* No background, no shadow, no border-radius. It will inherit from .toolkit-page-section */
   }
 
-  /* My Toolkit Grid Styling (inside the grey section) */
+  /* My Toolkit Grid Styling - JUSTIFIED FOR ALL SCREENS */
   .stack-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem; /* Reverted gap */
+    gap: 1rem; /* Original gap for mobile, will be adjusted for larger screens */
     max-width: 1000px; /* Adjust max-width within the section */
     margin: 0 auto;
-    justify-content: center; /* Center tech items on mobile */
+    justify-content: space-between; /* Justified alignment for all screens */
+    text-align: justify; /* Additional justification */
+  }
+
+  /* Add a pseudo-element to help with justification on the last line */
+  .stack-grid::after {
+    content: '';
+    flex: auto;
   }
 
   .tech-item {
-    background-color: var(--bg-white); /* White background for individual tech items */
-    color: var(--text-dark); /* Default dark text */
-    padding: 0.8rem 1.5rem; /* Reverted padding */
-    border-radius: 25px;
-    font-size: 0.95rem; /* Reverted font size */
+    background-color: var(--bg-secondary); /* White background for individual tech items */
+    color: var(--text-color); /* Default dark text */
+    padding: 0.8rem 1.5rem; /* Original padding for mobile */
+    border-radius: 25px; /* Original border radius */
+    font-size: 0.95rem; /* Original font size for mobile */
     font-weight: 600;
-    border: 1px solid #d0d0d0; /* Subtle border */
+    border: 1px solid #696969; /* Subtle border */
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* Lighter shadow */
     transition: all 0.3s ease-in-out;
     display: inline-flex;
-    align-items: center;
+    align-items: center; 
     cursor: pointer;
+    flex: 0 1 auto; /* Allow items to shrink and grow as needed for justification */
+    min-width: fit-content; /* Ensure text doesn't wrap */
 
     /* Dynamic hover colors */
     --hover-bg: #cccccc; /* Fallback */
@@ -386,16 +460,16 @@
   .tech-item.active {
     background: var(--hover-bg); /* Use dynamic background */
     color: var(--hover-text); /* Use dynamic text color */
-    transform: translateY(-5px) scale(1.05); /* Reverted transform */
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); /* Reverted shadow */
+    transform: translateY(-5px) scale(1.05); /* Original transform */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); /* Original shadow */
     border-color: transparent;
   }
 
   .tech-item:hover {
     background: var(--hover-bg); /* Use dynamic background */
     color: var(--hover-text); /* Use dynamic text color */
-    transform: translateY(-5px) scale(1.05); /* Reverted transform */
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); /* Reverted shadow */
+    transform: translateY(-5px) scale(1.05); /* Original transform */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); /* Original shadow */
     border-color: transparent;
   }
 
@@ -457,7 +531,7 @@
     margin-bottom: 1.2rem; /* Reduced margin */
     line-height: 1.2;
     /* Gradient for tech names - common base */
-    background: linear-gradient(45deg, var(--flutter-blue), var(--svelte-orange));
+    background: linear-gradient(45deg, var(--flutter-blue), #75bce6);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -524,9 +598,153 @@
     line-height: 1.4; /* Reduced line height */
   }
 
+  /* Click hint and hover effects */
+  .globe-area {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .click-hint-overlay {
+    position: absolute;
+    top: 15px;
+    right: 300px;
+    z-index: 10;
+    pointer-events: none;
+    animation: fadeInBounce 0.8s ease-out;
+  }
+
+  .click-hint-content {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--text-color);
+    padding: 0.8rem 1.2rem;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    position: relative;
+    max-width: 180px;
+    text-align: center;
+  }
+
+  :global(.dark) .click-hint-content {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-light);
+  }
+
+  .click-hint-icon {
+    font-size: 1.3rem;
+    margin-bottom: 0.4rem;
+    animation: pointPulse 2s infinite;
+    color: var(--svelte-orange);
+  }
+
+  .click-hint-text {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.3;
+    color: var(--text-color);
+  }
+
+  /* Show/hide different text based on screen size */
+  .desktop-text {
+    display: none;
+  }
+
+  .mobile-text {
+    display: block;
+  }
+
+  .click-hint-pulse {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    border: 2px solid rgba(255, 62, 0, 0.4);
+    border-radius: 16px;
+    animation: pulseRing 2s infinite;
+    pointer-events: none;
+  }
+
+  .hover-tooltip {
+    position: absolute;
+    top: 15px;
+    right: 220px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    color: var(--text-color);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    z-index: 1000;
+    pointer-events: none;
+    white-space: nowrap;  
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    animation: tooltipFadeIn 0.2s ease-out;
+    display: none; /* Hidden by default, shown only on desktop */
+  }
+
+  .hover-tooltip i {
+    margin-right: 0.5rem;
+    color: var(--svelte-orange);
+  }
+
+  /* Animations */
+  @keyframes fadeInBounce {
+    0% {
+      opacity: 0;
+      transform: translateY(-20px) scale(0.8);
+    }
+    60% {
+      opacity: 1;
+      transform: translateY(5px) scale(1.05);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes pointPulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.2);
+    }
+  }
+
+  @keyframes pulseRing {
+    0% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 0.6;
+    }
+    100% {
+      transform: translate(-50%, -50%) scale(1.3);
+      opacity: 0;
+    }
+  }
+
+  @keyframes tooltipFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   /* Responsive adjustments */
 
-  /* Tablet (>= 768px) */
+  /* Tablet (>= 768px) - ORIGINAL LAYOUT RESTORED */
   @media (min-width: 768px) {
     .section-content-wrapper {
         padding: 0 2rem;
@@ -534,39 +752,53 @@
 
     /* My Toolkits Section */
     .my-toolkits-card-section {
-      padding: 4rem 0; /* Reduced padding */
-      margin: 4rem auto; /* Reduced margin */
+      padding: 4rem 0; /* Original padding */
+      margin: 4rem auto; /* Original margin */
     }
     .my-toolkits-card-section .centered-title {
-      font-size: 1.5rem;
-      margin-bottom: 2.5rem; /* Reduced margin */
+      font-size: 1.8rem;
+      margin-bottom: 2.5rem; /* Original margin */
     }
-    /* Globe area adjustments */
+    /* Globe area adjustments - ORIGINAL LAYOUT */
     .globe-area {
-        max-width: 500px; /* Allow globe to be slightly larger */
-        height: 500px; /* Slightly increased height */
-        padding-bottom: 4rem;
+        max-width: 500px; /* Original max-width */
+        height: 500px; /* Original height */
+        padding-bottom: 4rem; /* Original padding */
       }
     .stack-grid {
-      gap: 1rem; /* Reduced gap */
-      justify-content: flex-start;
+      gap: 1rem; /* Original gap */
+      justify-content: space-between; /* Keep justified alignment */
     }
     .tech-item {
-      padding: 0.8rem 1.6rem; /* Reduced padding */
-      font-size: 0.95rem; /* Reduced font size */
+      padding: 0.8rem 1.6rem; /* Original padding */
+      font-size: 0.95rem; /* Original font size */
+    }
+
+    /* Show desktop text, hide mobile text */
+    .desktop-text {
+      display: block;
+    }
+    .mobile-text {
+      display: none;
+    }
+
+    /* Show hover tooltip on desktop */
+    .hover-tooltip {
+      display: block;
+      right: -100px; /* Position to the right of the click hint */
     }
 
     /* Why Tech Section Desktop */
     .why-tech-section {
-      padding: 5rem 0; /* Reduced padding */
+      padding: 5rem 0; /* Original padding */
     }
     .why-tech-container {
-      gap: 2.5rem; /* Reduced gap */
+      gap: 2.5rem; /* Original gap */
       flex-direction: row;
       align-items: stretch;
     }
     .why-tech-card {
-      padding: 2.5rem; /* Reverted card padding */
+      padding: 2.5rem; /* Original card padding */
     }
     .tech-icon-container {
       justify-content: flex-start;
@@ -582,7 +814,7 @@
     }
   }
 
-  /* Desktop (>= 1024px) */
+  /* Desktop (>= 1024px) - ORIGINAL LAYOUT RESTORED */
   @media (min-width: 1024px) {
       .section-content-wrapper {
           padding: 0 3rem;
@@ -590,45 +822,46 @@
 
     /* My Toolkits Section */
     .my-toolkits-card-section {
-        padding: 0rem 0; /* Reduced padding */
-        margin: 0rem auto; /* Reduced margin */
+        padding: 0rem 0; /* Original padding */
+        margin: 0rem auto; /* Original margin */
     }
     .my-toolkits-card-section .centered-title {
-        font-size: 1.8rem;
-        margin-bottom: 3rem; /* Reduced margin */
+        font-size: 2.5rem;
+        margin-bottom: 3rem; /* Original margin */
     }
-    /* Globe area adjustments */
+    /* Globe area adjustments - ORIGINAL LAYOUT */
     .globe-area {
-        max-width: 500px; /* Even larger on desktop */
-        height: 500px; /* Increased height for desktop */
-        padding-bottom: 4rem; /* Adjust space below globe for larger screens */
+        max-width: 500px; /* Original max-width */
+        height: 500px; /* Original height */
+        padding-bottom: 4rem; /* Original padding */
     }
     .stack-grid {
-        gap: 1.2rem; /* Reduced gap */
+        gap: 1.2rem; /* Original gap */
+        justify-content: space-between; /* Keep justified alignment */
     }
     .tech-item {
-        padding: 0.9rem 1.8rem; /* Reduced padding */
-        font-size: 1rem; /* Reduced font size */
+        padding: 0.9rem 1.8rem; /* Original padding */
+        font-size: 1rem; /* Original font size */
     }
 
     /* Why Tech Section Desktop */
     .why-tech-section {
-        padding: 6rem 0; /* Reduced padding */
+        padding: 6rem 0; /* Original padding */
     }
     .why-tech-container {
-        gap: 3rem; /* Reduced gap */
+        gap: 3rem; /* Original gap */
     }
     .why-tech-card {
-        padding: 3rem; /* Reduced padding */
+        padding: 3rem; /* Original padding */
     }
     .tech-name {
-        font-size: 2rem; /* Adjusted font size */
+        font-size: 2rem; /* Original font size */
     }
     .why-point h4 {
-        font-size: 1.15rem; /* Adjusted font size */
+        font-size: 1.15rem; /* Original font size */
     }
     .why-point p {
-        font-size: 0.98rem; /* Adjusted font size */
+        font-size: 0.98rem; /* Original font size */
     }
   }
 
@@ -639,4 +872,96 @@
         }
     }
 
+  /* Extra small screens - OPTIMIZED FOR MOBILE */
+  @media (max-width: 500px) {
+    .section-content-wrapper {
+        padding: 0 0rem;
+    }
+
+    /* My Toolkits Section - REDUCED SPACE */
+    .my-toolkits-card-section {
+      padding: 2rem 0 2rem 0; /* Much reduced padding */
+      margin: 2rem auto; /* Much reduced margin */
+    }
+    .my-toolkits-card-section .centered-title {
+      font-size: 1.6rem; /* Smaller title */
+      margin-bottom: 1.5rem; /* Much reduced margin */
+    }
+    /* Globe area adjustments - COMPACT BUT NO OVERLAP */
+    .globe-area {
+        max-width: 100%;
+        height: 100%; /* Compact height but sufficient */
+        padding-bottom: 1rem; /* Minimal padding to save space */
+        margin-bottom: 1.5rem; /* Sufficient margin to prevent overlap */
+      }
+    .stack-grid {
+      gap: 0.4rem; /* Very tight gap */
+      justify-content: space-between; /* Keep justified alignment */
+    }
+    .tech-item {
+      padding: 0.4rem 0.8rem; /* Very small padding */
+      font-size: 0.7rem; /* Very small font */
+      border-radius: 15px; /* Smaller border radius */
+    }
+    .tech-item.active,
+    .tech-item:hover {
+      transform: translateY(-2px) scale(1.02); /* Minimal transform */
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* Smaller shadow */
+    }
+
+    /* Click hint adjustments for mobile */
+    .click-hint-overlay {
+      top: 8px;
+      right: 200px;
+    }
+    
+    .click-hint-content {
+      padding: 0.6rem 0.9rem;
+      max-width: 140px;
+    }
+    
+    .click-hint-text {
+      font-size: 0.7rem;
+    }
+    
+    .click-hint-icon {
+      font-size: 1.1rem;
+      margin-bottom: 0.3rem;
+    }
+
+    /* Hide hover tooltip on mobile */
+    .hover-tooltip {
+      display: none;
+    }
+
+    /* Why Tech Section */
+    .why-tech-section {
+      padding: 3rem 0; /* Reduced padding */
+    }
+    .why-tech-container {
+      gap: 2rem; /* Reduced gap */
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .why-tech-card {
+      padding: 1.5rem 1rem; /* Much reduced padding */
+    }
+    .tech-icon-container {
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+    .tech-illustration {
+      max-width: 100px; /* Smaller illustration */
+    }
+    .tech-name {
+      font-size: 1.5rem; /* Smaller tech name */
+      margin-bottom: 1rem;
+    }
+    .why-point h4 {
+      font-size: 1rem;
+    }
+    .why-point p {
+      font-size: 0.85rem;
+    }    
+  }
 </style>

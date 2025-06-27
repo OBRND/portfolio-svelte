@@ -1,16 +1,16 @@
 <script lang="ts">
   import { theme } from '../../../lib/stores/theme'; // Adjust path if needed
 
-  let src = '/ob1.png'; // Default image for light mode
+  let src = '/ob1.webp'; // Default image for light mode
   let isdarkmode = true;
-  const darkSrc = '/ob.png'; // Your image for dark mode (e.g., a darker version)
+  const darkSrc = '/ob.webp'; // Your image for dark mode (e.g., a darker version)
  
   $: {
     if ($theme === 'dark') {
       src = darkSrc;
       isdarkmode = true;
     } else {
-      src = '/ob1.png'; // Ensure it reverts to the light mode image
+      src = '/ob1.webp'; // Ensure it reverts to the light mode image
       isdarkmode = false;
     }
   }
@@ -138,7 +138,9 @@
   .about-me-page {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     width: 100%;
-    overflow-x: hidden;
+    overflow-x: visible;
+    margin-left: 2rem;
+    margin-right: 2rem;
     /* Use CSS variables for background colors */
     background-color: var(--bg-primary); 
     line-height: 1.6;
@@ -517,6 +519,7 @@
   .about-column p {
     margin-bottom: 0;
     line-height: 1.7;
+    padding-bottom: 1rem;
   }
 
   /* Responsive adjustments */
@@ -602,6 +605,10 @@
       padding: 4rem 2rem 2rem; /* Reduced bottom padding */
       gap: 2.5rem;
     }
+
+    .centered-title {
+    font-size: 2.5rem;
+  }
 
     .avatar-container {
       align-self: center;

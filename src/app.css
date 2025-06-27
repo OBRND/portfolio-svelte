@@ -3,6 +3,8 @@
   --text-color: #111;
   --bg-color: #fff;
   --bg-secondary: #f0f0f0;
+  --bg-form: #f0f0f0;
+  --bg-inner-form: #fff;
 
   /* Typography */
   font-family: Inter, system-ui, -apple-system, sans-serif;
@@ -21,6 +23,8 @@
   --text-color: #eee;
   --bg-color: #121212;
   --bg-secondary: #444343;
+  --bg-form: #292828fa;
+  --bg-inner-form: #1a1a1afa;
 }
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');

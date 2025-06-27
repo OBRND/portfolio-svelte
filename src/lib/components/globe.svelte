@@ -35,7 +35,7 @@
   }
 </script>
 
-<div bind:this={container} style="width: 100%; height: 100%;"></div>
+<div bind:this={container} style="width: 100%; height: 110%;"></div>
 
 <style>
   /* Any styles for the container div */
