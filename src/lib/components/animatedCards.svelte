@@ -1,577 +1,418 @@
 <script lang="ts">
-  import { fade, scale } from 'svelte/transition';
-  import { onMount } from 'svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
 
-  // Props with defaults using Svelte 5 syntax
-  let {
-    title = '',
-    description = '',
-    logo = '',
-    link = '',
-    buttonText = 'Read now',
-    animationColor = '#ff6b35',
-    buttonColor = 'white',
-    shapeType = 'circle',
-    modalData = null
-  } = $props();
+	export interface ServiceModalData {
+		title: string;
+		subtitle: string;
+		description: string;
+		/** Concrete things I hand over — the substance of the service. */
+		delivers: string[];
+		/** Stack keywords, rendered as chips. The terms job listings use. */
+		stack: string[];
+	}
 
-  // Internal state
-  let isHovered = $state(false);
-  let isModalOpen = $state(false);
-  let cardElement;
-  let modalContainer;
+	interface Props {
+		title?: string;
+		description?: string;
+		logo?: string;
+		buttonText?: string;
+		/** Brand colour for the flooding shape and the card border. */
+		animationColor?: string;
+		shapeType?: 'circle' | 'wave' | 'blob' | 'tree' | 'triangle' | 'hexagon';
+		modalData?: ServiceModalData | null;
+	}
 
-  onMount(() => {
-    document.body.appendChild(modalContainer);
-    return () => {
-      if (modalContainer.parentNode) {
-        document.body.removeChild(modalContainer);
-      }
-    };
-  });
+	let {
+		title = '',
+		description = '',
+		logo = '',
+		buttonText = 'What this covers',
+		animationColor = '#ff6b35',
+		shapeType = 'circle',
+		modalData = null
+	}: Props = $props();
 
-  // Handle mouse events
-  function handleMouseEnter() {
-    isHovered = true;
-  }
-
-  function handleMouseLeave() {
-    isHovered = false;
-  }
-
-  function handleClick(event: Event) { // Added event type for clarity
-    event.preventDefault();
-    isModalOpen = true;
-    // Prevent body scroll when modal is open
-    document.body.style.overflow = 'hidden';
-  }
-
-  // Modal functions
-  function closeModal() {
-    isModalOpen = false;
-    // Restore body scroll
-    document.body.style.overflow = 'auto';
-  }
-
-  function handleKeydown(event: KeyboardEvent) { // Added event type for clarity
-    if (event.key === 'Escape') {
-      closeModal();
-    }
-  }
-
-  function handleBackdropClick(event: MouseEvent) { // Added event type for clarity
-    if (event.target === event.currentTarget) {
-      closeModal();
-    }
-  }
+	let isHovered = $state(false);
+	let isModalOpen = $state(false);
 </script>
 
-<div
-  class="animated-card"
-  class:is-hovered={isHovered}
-  bind:this={cardElement}
-  onmouseenter={handleMouseEnter}
-  onmouseleave={handleMouseLeave}
-  onclick={handleClick}
-  role="button"
-  tabindex="0"
-  onkeydown={(event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      handleClick(event);
-    }
-  }}
-  style="--animation-card-border-color: {animationColor};"
+<article
+	class="animated-card"
+	class:is-hovered={isHovered}
+	onmouseenter={() => (isHovered = true)}
+	onmouseleave={() => (isHovered = false)}
+	style="--shape-color: {animationColor};"
 >
-  <div class="card-content">
-    {#if logo}
-      <div class="card-logo">
-        <img src={logo || "/placeholder.svg"} alt="Logo" />
-      </div>
-    {/if}
+	<div class="card-content">
+		{#if logo}
+			<div class="card-logo">
+				<img src={logo} alt="" />
+			</div>
+		{/if}
 
-    <div class="card-body">
-      {#if title}
-        <h2 class="card-title">{title}</h2>
-      {/if}
+		<div class="card-body">
+			{#if title}<h3 class="card-title">{title}</h3>{/if}
+			{#if description}<p class="card-description">{description}</p>{/if}
+		</div>
+	</div>
 
-      {#if description}
-        <p class="card-description">{description}</p>
-      {/if}
-    </div>
-  </div>
+	<!-- The flooding shape. Purely decorative, and never a pointer target. -->
+	<div class="svg-container {shapeType}" aria-hidden="true">
+		{#if shapeType === 'circle'}
+			<svg viewBox="0 0 200 200" preserveAspectRatio="none">
+				<circle cx="100" cy="100" r="100" fill={animationColor} />
+			</svg>
+		{:else if shapeType === 'wave'}
+			<svg viewBox="0 0 200 200" preserveAspectRatio="none">
+				<path d="M0,200 C50,120 150,120 200,200 L200,200 L0,200 Z" fill={animationColor} />
+			</svg>
+		{:else if shapeType === 'blob'}
+			<svg viewBox="0 0 200 200" preserveAspectRatio="none">
+				<path d="M0,200 C30,150 70,180 100,150 C130,120 170,150 200,200 L200,200 L0,200 Z" fill={animationColor} />
+			</svg>
+		{:else if shapeType === 'tree'}
+			<svg viewBox="0 0 200 200" preserveAspectRatio="none">
+				<path d="M50,0 C65,0 85,15 85,35 C85,55 65,70 50,70 C35,70 15,55 15,35 C15,15 35,0 50,0 M50,0 C60,-15 80,-15 85,0 C110,10 110,35 85,35 C110,45 110,70 85,70 C80,85 60,85 50,70" fill={animationColor} />
+			</svg>
+		{:else if shapeType === 'triangle'}
+			<svg viewBox="0 0 200 200" preserveAspectRatio="none">
+				<path d="M50,10 Q56,10 59,15 L90,75 Q93,80 88,85 L12,85 Q7,80 10,75 L41,15 Q44,10 50,10 Z" fill={animationColor} />
+			</svg>
+		{:else if shapeType === 'hexagon'}
+			<svg viewBox="0 0 200 200" preserveAspectRatio="none">
+				<path d="M30,10 Q42,-2 54,10 L74,10 Q86,10 92,22 L100,40 Q106,52 100,64 L92,82 Q86,94 74,94 L54,94 Q42,106 30,94 L16,64 Q10,52 16,40 L24,22 Q30,10 30,10 Z" fill={animationColor} />
+			</svg>
+		{/if}
+	</div>
 
-  <div class="svg-container {shapeType}">
-    {#if shapeType === 'circle'}
-      <svg viewBox="0 0 200 200" preserveAspectRatio="none">
-        <circle cx="100" cy="100" r="100" fill={animationColor} />
-      </svg>
-    {:else if shapeType === 'wave'}
-      <svg viewBox="0 0 200 200" preserveAspectRatio="none">
-        <path d="M0,200 C50,120 150,120 200,200 L200,200 L0,200 Z" fill={animationColor} />
-      </svg>
-    {:else if shapeType === 'blob'}
-      <svg viewBox="0 0 200 200" preserveAspectRatio="none">
-        <path d="M0,200 C30,150 70,180 100,150 C130,120 170,150 200,200 L200,200 L0,200 Z" fill={animationColor} />
-      </svg>
-    {:else if shapeType === 'tree'}
-      <svg viewBox="0 0 200 200" preserveAspectRatio="none">
-        <path d="M50,0
-        C65,0 85,15 85,35
-        C85,55 65,70 50,70
-        C35,70 15,55 15,35
-        C15,15 35,0 50,0
-        M50,0
-        C60,-15 80,-15 85,0
-        C110,10 110,35 85,35
-        C110,45 110,70 85,70
-        C80,85 60,85 50,70"
-      fill={animationColor} />
-      </svg>
-    {:else if shapeType === 'triangle'}
-      <svg viewBox="0 0 200 200" preserveAspectRatio="none">
-        <path d="M50,10
-        Q56,10 59,15
-        L90,75
-        Q93,80 88,85
-        L12,85
-        Q7,80 10,75
-        L41,15
-        Q44,10 50,10 Z"
+	<!--
+		A single real <button> rather than a clickable <div> wrapping a nested
+		button. Its ::after stretches over the whole card, so the entire surface
+		stays clickable while there is exactly one tab stop and one accessible name.
+	-->
+	<button class="card-button" onclick={() => (isModalOpen = true)}>
+		<span>{buttonText}</span>
+		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="arrow-icon" aria-hidden="true">
+			<line x1="5" y1="12" x2="19" y2="12" />
+			<polyline points="12 5 19 12 12 19" />
+		</svg>
+		<span class="u-sr-only">about {title}</span>
+	</button>
+</article>
 
-        fill={animationColor} />
-      </svg>
-    {:else if shapeType === 'hexagon'}
-      <svg viewBox="0 0 200 200" preserveAspectRatio="none">
-        <path d="M30,10
-        Q42,-2 54,10
-        L74,10
-        Q86,10 92,22
-        L100,40
-        Q106,52 100,64
-        L92,82
-        Q86,94 74,94
-        L54,94
-        Q42,106 30,94
-        L16,64
-        Q10,52 16,40
-        L24,22
-        Q30,10 30,10 Z"
+{#if modalData}
+	<Modal
+		open={isModalOpen}
+		title={modalData.title}
+		subtitle={modalData.subtitle}
+		onclose={() => (isModalOpen = false)}
+	>
+		<div class="service-detail" style="--shape-color: {animationColor};">
+			<p class="lede">{modalData.description}</p>
 
-      fill={animationColor} />
-      </svg>
-    {/if}
-  </div>
+			<section class="detail-block">
+				<h3>What this covers</h3>
+				<ul class="delivers">
+					{#each modalData.delivers as item}
+						<li>
+							<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<path d="m5 13 4 4L19 7" />
+							</svg>
+							<span>{item}</span>
+						</li>
+					{/each}
+				</ul>
+			</section>
 
-  <div class="button-container">
-    <button class="card-button" onclick={handleClick}>
-      {buttonText}
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="arrow-icon">
-        <line x1="5" y1="12" x2="19" y2="12"></line>
-        <polyline points="12 5 19 12 12 19"></polyline>
-      </svg>
-    </button>
-  </div>
-</div>
-<div bind:this={modalContainer} style="position: fixed; z-index: 1000; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
-  {#if isModalOpen && modalData}
-    <div
-      class="modal-backdrop"
-      transition:fade={{ duration: 300 }}
-      onclick={closeModal}
-      onkeydown={handleKeydown}
-      role="dialog"
-      aria-modal="true"
-      tabindex="-1"
-      style="pointer-events: all;"
-    >
-      <div
-        class="modal-dialog"
-        transition:scale={{ duration: 400, start: 0.9 }}
-        onclick={closeModal}
-      >
-      <div class="modal-header" style="--service-color: {animationColor}">
-        <div class="service-icon">{modalData.icon}</div>
-        <div class="header-text">
-          <h2>{modalData.title}</h2>
-          <p>{modalData.subtitle}</p>
-        </div>
-        <button class="close-btn" onclick={closeModal} aria-label="Close modal">×</button>
-      </div>
-
-      <div class="modal-body">
-        <p class="description">{modalData.description}</p>
-
-        {#if modalData.tools}
-          <div class="section">
-            <h3>🛠️ Key Tools & Technologies</h3>
-            <ul>
-              {#each modalData.tools as tool}
-                <li>{tool}</li>
-              {/each}
-            </ul>
-          </div>
-        {/if}
-
-        {#if modalData.philosophy}
-          <div class="section">
-            <h3>💡 Design Philosophy</h3>
-            <ul>
-              {#each modalData.philosophy as principle}
-                <li>{principle}</li>
-              {/each}
-            </ul>
-          </div>
-        {/if}
-
-        {#if modalData.services}
-          <div class="section">
-            <h3>✅ What I Handle</h3>
-            <ul>
-              {#each modalData.services as serviceItem}
-                <li>{serviceItem}</li>
-              {/each}
-            </ul>
-          </div>
-        {/if}
-
-        {#if modalData.offerings}
-          <div class="section">
-            <h3>⭐ What I Offer</h3>
-            <ul>
-              {#each modalData.offerings as offering}
-                <li>{offering}</li>
-              {/each}
-            </ul>
-          </div>
-        {/if}
-      </div>
-    </div>
-  </div>
-  
+			<section class="detail-block">
+				<h3>Stack</h3>
+				<ul class="stack">
+					{#each modalData.stack as item}
+						<li>{item}</li>
+					{/each}
+				</ul>
+			</section>
+		</div>
+	</Modal>
 {/if}
-</div>
+
 <style>
-  .animated-card {
-    position: relative;
-    border-radius: 8px;
-    overflow: hidden;
-    background-color: var(--bg-primary);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    cursor: pointer;
-    height: 105%;
-    width: 370px;
-    min-width: 370px;
-    min-height: 300px;
-    display: flex;
-    flex-direction: column;
-    border: 2px solid var(--animation-card-border-color); /* <-- Corrected line */
-    padding: 2rem;
-  }
+	.animated-card {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		/* Fluid rather than the old fixed 370px, which overflowed the grid on
+		   narrow screens. */
+		width: 100%;
+		min-height: 300px;
+		padding: clamp(1.5rem, 3.5vw, 2rem);
+		padding-bottom: 3.75rem;
+		border-radius: var(--r-md);
+		border: 1px solid var(--line);
+		background: var(--bg-elev-1);
+		box-shadow: var(--shadow-sm);
+		overflow: hidden;
+		isolation: isolate;
+		transition:
+			transform var(--dur-base) var(--ease-out),
+			box-shadow var(--dur-base) var(--ease-out),
+			border-color var(--dur-base) var(--ease-out);
+	}
 
-  .card-content {
-    position: relative;
-    z-index: 2;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
+	.animated-card:hover {
+		transform: translateY(-3px);
+		border-color: var(--shape-color);
+		box-shadow: var(--shadow-lg);
+	}
 
-  .card-logo {
-    margin-bottom: 2rem;
-    max-width: 150px;
-    height: 40px;
-  }
+	.animated-card:has(.card-button:focus-visible) {
+		outline: 2px solid var(--shape-color);
+		outline-offset: 3px;
+	}
 
-  .card-logo img {
-    max-height: 100%;
-    width: auto;
-  }
+	.card-content {
+		position: relative;
+		z-index: 2;
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+	}
 
-  .card-title {
-    font-size: clamp(1rem, 3rem, 4rem);
-    font-weight: 700;
-    margin: 0 0 0.5rem 0;
-    transition: color 0.3s ease;
-  }
+	.card-logo {
+		margin-bottom: var(--sp-6);
+		max-width: 150px;
+		height: 40px;
+	}
 
-  .card-description {
-    font-size: 1.25rem;
-    line-height: 1.5;
-    color: #555;
-    margin: 0 0 2rem 0;
-    transition: color 0.3s ease;
-  }
+	.card-logo img {
+		max-height: 100%;
+		width: auto;
+	}
 
-  /* SVG Animation - Base */
-  .svg-container {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
-    pointer-events: none;
-    overflow: hidden;
-  }
+	.card-title {
+		font-family: var(--font-display);
+		font-size: clamp(1.2rem, 2.6vw, 1.5rem);
+		font-weight: 700;
+		letter-spacing: var(--tracking-head);
+		line-height: 1.15;
+		margin-bottom: var(--sp-3);
+		transition: color var(--dur-base) var(--ease-out);
+	}
 
-  .svg-container svg {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 70%;
-    transform: translateY(60%);
-    transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
+	.card-description {
+		font-size: var(--fs-sm);
+		color: var(--text-muted);
+		transition: color var(--dur-base) var(--ease-out);
+	}
 
-  /* Shape-specific adjustments */
-  .svg-container.circle svg {
-    transform: translate(-24%, 45%) scale(.65);
-  }
+	/* ---- Flooding shape -------------------------------------------------- */
 
-  .svg-container.wave svg {
-    transform: translate(-32%, -9%) scale(1.2);
-  }
+	.svg-container {
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		pointer-events: none;
+		overflow: hidden;
+	}
 
-  .svg-container.blob svg {
-    transform: translate(-40%, -5%) scale(1.2);
-  }
+	.svg-container svg {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		width: 100%;
+		height: 70%;
+		transform: translateY(60%);
+		transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+	}
 
-  .svg-container.tree svg {
-    transform: translate(-30%, -35%) scale(3) rotate(210deg);
-  }
+	/*
+		Resting positions, each shape peeks from a different corner. Scaled up
+		~20% from the original set (and, for hexagon/triangle, nudged further
+		into the corner) specifically so the shape's fill sits fully behind the
+		"What this covers" button at rest, not just grazing its edge.
+	*/
+	.svg-container.circle svg {
+		transform: translate(-22%, 38%) scale(0.75);
+	}
+	.svg-container.wave svg {
+		transform: translate(-50%, -32%) scale(1.75);
+	}
+	.svg-container.blob svg {
+		transform: translate(-40%, -32%) scale(1.75);
+	}
+	.svg-container.tree svg {
+		transform: translate(-35%, -75%) scale(4) rotate(210deg);
+	}
+	.svg-container.triangle svg {
+		transform: translate(10%, 190%) scale(2.7) rotate(45deg);
+	}
+	.svg-container.hexagon svg {
+		transform: translate(16%, -35%) scale(5) rotate(240deg);
+	}
 
-  .svg-container.triangle svg {
-    transform: translate(0%, 155%) scale(2.2) rotate(45deg);
-  }
+	/* Hover, the shape sweeps across and floods the card. Scaled up in step
+	   with the resting sizes above so the growth from rest to hover reads as
+	   proportional rather than the hover jump suddenly looking smaller. */
+	.is-hovered .svg-container.blob svg {
+		transform: translate(-65%, -280%) scale(7.2) rotate(10deg);
+	}
+	.is-hovered .svg-container.wave svg {
+		transform: translate(50%, -260%) scale(8) rotate(10deg);
+	}
+	.is-hovered .svg-container.circle svg {
+		transform: translate(0%, -20%) scale(2.3) rotate(-45deg);
+	}
+	.is-hovered .svg-container.tree svg {
+		transform: translate(115%, -340%) scale(13) rotate(260deg);
+	}
+	.is-hovered .svg-container.triangle svg {
+		transform: translate(40%, 300%) scale(7.2) rotate(45deg);
+	}
+	.is-hovered .svg-container.hexagon svg {
+		transform: translate(90%, 80%) scale(6) rotate(350deg);
+	}
 
-  .svg-container.hexagon svg {
-    transform: translate(20%, 5%) scale(3.2) rotate(260deg);
-  }
+	.is-hovered .card-title,
+	.is-hovered .card-description {
+		color: #fff;
+	}
 
-  /* On hover, move to cover the entire card with a curved motion */
-  .is-hovered .svg-container.blob svg {
-    transform: translate(-65%, -250%) scale(6) rotate(10deg);
-  }
+	/* ---- Button ---------------------------------------------------------- */
 
-  .is-hovered .svg-container.wave svg {
-    transform: translate(0%, -235%) scale(6) rotate(10deg);
-  }
+	/*
+		Sits closer to the bottom-left corner, over the shape's resting position,
+		so the shape reads as tucked behind the button rather than the button
+		floating in empty space above it. Its background stays glassy rather than
+		a solid pill at rest, so the shape's colour still shows through where the
+		two overlap; a light blur keeps the label readable over either the plain
+		card or the peeking shape. On hover the shape floods the whole card, so
+		the pill switches to a solid chip instead, for guaranteed contrast.
+	*/
+	.card-button {
+		position: absolute;
+		bottom: clamp(0.9rem, 2.2vw, 1.25rem);
+		left: clamp(0.9rem, 2.2vw, 1.25rem);
+		z-index: 3;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 1rem;
+		border: 1px solid var(--line);
+		border-radius: var(--r-pill);
+		background: color-mix(in srgb, var(--bg-elev-1) 45%, transparent);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+		/* Always white at rest rather than the theme's --text: the shape sits
+		   behind the button here in both themes, and white reads consistently
+		   against it, whereas light mode's dark --text lost contrast against
+		   the colour. A soft shadow keeps it legible on the rare sliver where
+		   the glass shows plain card background instead. */
+		color: #fff;
+		text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+		font-size: var(--fs-sm);
+		font-weight: 600;
+		cursor: pointer;
+		transition:
+			color var(--dur-base) var(--ease-out),
+			background-color var(--dur-base) var(--ease-out),
+			border-color var(--dur-base) var(--ease-out),
+			transform var(--dur-base) var(--ease-out);
+	}
 
-  .is-hovered .svg-container.circle svg {
-    transform: translate(0%, -20%) scale(2.3) rotate(-45deg);
-  }
+	/* On hover the card floods with colour, so the pill switches to a solid
+	   chip to read against it: white chip, brand-coloured label. */
+	.is-hovered .card-button {
+		background: #fff;
+		border-color: #fff;
+		color: var(--shape-color);
+	}
 
-  .is-hovered .svg-container.tree svg {
-    transform: translate(115%, -250%) scale(10) rotate(260deg);
-  }
+	/* Stretches the hit area over the whole card without adding a tab stop. */
+	.card-button::after {
+		content: '';
+		position: absolute;
+		inset: -100vmax;
+		z-index: -1;
+	}
 
-  .is-hovered .svg-container.triangle svg {
-    transform: translate(60%, 260%) scale(6) rotate(40deg);
-  }
+	.card-button:focus-visible {
+		outline: none;
+	}
 
-  .is-hovered .svg-container.hexagon svg {
-    transform: translate(90%, 80%) scale(5) rotate(350deg);
-  }
+	.animated-card:hover .card-button {
+		transform: translateX(4px);
+	}
 
-  /* Button */
-  .button-container {
-    position: absolute;
-    bottom: 2rem;
-    left: 2rem;
-    z-index: 3;
-  }
+	.arrow-icon {
+		transition: transform var(--dur-base) var(--ease-out);
+	}
 
-  .card-button {
-    font-size: 1rem;
-    font-weight: 500;
-    background: none;
-    border: none;
-    color: white;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: transform 0.3s ease;
-    cursor: pointer;
-    padding: 0;
-  }
+	.animated-card:hover .arrow-icon {
+		transform: translateX(3px);
+	}
 
-  .card-button:hover {
-    transform: translateX(5px);
-  }
+	/* ---- Dialog contents -------------------------------------------------- */
 
-  .arrow-icon {
-    transition: transform 0.3s ease;
-  }
+	.lede {
+		color: var(--text-muted);
+		font-size: var(--fs-lead);
+		padding-bottom: var(--sp-5);
+		border-bottom: 1px solid var(--line);
+	}
 
-  .card-button:hover .arrow-icon {
-    transform: translateX(3px);
-  }
+	.detail-block {
+		margin-top: var(--sp-6);
+	}
 
-  /* Text color change on hover */
-  .is-hovered .card-title,
-  .is-hovered .card-description {
-    color: white;
-  }
+	.detail-block h3 {
+		font-family: var(--font-body);
+		font-size: var(--fs-eyebrow);
+		font-weight: 600;
+		letter-spacing: var(--tracking-eyebrow);
+		text-transform: uppercase;
+		color: var(--text-subtle);
+		margin-bottom: var(--sp-4);
+	}
 
-  /* Modal Styles - positioned relative to the services section */
-  .modal-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 1rem;
-  }
+	.delivers {
+		list-style: none;
+		display: grid;
+		gap: var(--sp-3);
+	}
 
-  .modal-dialog {
-    background: var(--bg-secondary, white);
-    border-radius: 16px;
-    width: min(700px, 90vw);
-    max-height: min(80vh, 100vh - 2rem);
-    overflow-y: auto;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-  }
+	.delivers li {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: var(--sp-3);
+		font-size: var(--fs-sm);
+		color: var(--text-muted);
+	}
 
-  .modal-header {
-    background: linear-gradient(135deg, var(--service-color), color-mix(in srgb, var(--service-color) 80%, #000));
-    color: white;
-    padding: 2rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
+	.delivers svg {
+		color: var(--shape-color);
+		margin-top: 0.35rem;
+	}
 
-  .service-icon {
-    font-size: 2rem;
-    background: rgba(255, 255, 255, 0.2);
-    padding: 0.5rem;
-    border-radius: 12px;
-    backdrop-filter: blur(10px);
-  }
+	.stack {
+		list-style: none;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+	}
 
-  .header-text {
-    flex: 1;
-  }
+	.stack li {
+		padding: 0.25rem 0.7rem;
+		border-radius: var(--r-pill);
+		border: 1px solid var(--line);
+		background: var(--bg-inset);
+		color: var(--text-muted);
+		font-size: var(--fs-xs);
+		font-weight: 500;
+	}
 
-  .header-text h2 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.5rem;
-    font-weight: 700;
-  }
-
-  .header-text p {
-    margin: 0;
-    opacity: 0.9;
-  }
-
-  .close-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    font-size: 1.5rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(10px);
-  }
-
-  .close-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-  }
-
-  .modal-body {
-    padding: 2rem;
-    overflow-y: auto;
-    flex: 1;
-  }
-
-  .description {
-    font-size: 1.1rem;
-    line-height: 1.6;
-    margin-bottom: 2rem;
-    color: var(--text-color, #333);
-  }
-
-  .section {
-    margin-bottom: 2rem;
-  }
-
-  .section h3 {
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin: 0 0 1rem 0;
-    color: var(--text-color, #333);
-  }
-
-  .section ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .section li {
-    padding: 0.5rem 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    position: relative;
-    padding-left: 1.5rem;
-    color: var(--text-color, #555);
-  }
-
-  .section li:before {
-    content: '•';
-    color: var(--svelte-orange, #ff3e00);
-    font-weight: bold;
-    position: absolute;
-    left: 0;
-  }
-
-  .section li:last-child {
-    border-bottom: none;
-  }
-
-  /* Mobile responsive */
-  @media (max-width: 768px) {
-    .modal-backdrop {
-      padding: 0.5rem;
-    }
-
-    .modal-header {
-      padding: 1.5rem;
-    }
-
-    .service-icon {
-      font-size: 1.5rem;
-    }
-
-    .header-text h2 {
-      font-size: 1.3rem;
-    }
-
-    .modal-body {
-      padding: 1.5rem;
-    }
-
-    .modal-dialog {
-      max-height: 85vh;
-    }
-  }
-
-  /* Dark mode support */
-  :global(.dark) .modal-dialog {
-    background: var(--bg-secondary);
-  }
-
-  :global(.dark) .section li {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  }
+	@media (prefers-reduced-motion: reduce) {
+		.svg-container svg {
+			transition: none;
+		}
+	}
 </style>

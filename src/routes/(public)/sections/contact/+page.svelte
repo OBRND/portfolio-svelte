@@ -1,479 +1,420 @@
 <script lang="ts">
-    import { enhance } from '$app/forms';
-    import { writable } from 'svelte/store';
-  
-    // Use $props() to access page data and form actions results
-    let { form } = $props();
-  
-    // Writable store for form fields
-    const contactForm = writable({
-      name: '',
-      email: '',
-      subject: '',
-      message: ''
-    });
-  
-    // Writable store for submission status
-    const isSubmitting = writable(false);
-  
-    // Handle form submission with SvelteKit's enhance action
-    function handleSubmit(event) {
-      event.preventDefault(); // Prevent default form submission
-      isSubmitting.set(true); // Set submitting state to true
-      return async ({ result, update }) => {
-        isSubmitting.set(false); // Reset submitting state after response
-  
-        if (result.type === 'success') {
-          // Clear the form on successful submission
-          contactForm.set({ name: '', email: '', subject: '', message: '' });
-        }
-        await update(); // Update the page with the latest form result
-      };
-    }
-  </script>
-  
-  <div class="contact-page-container">
-    <section class="contact-header-section">
-      <div class="section-content-wrapper">
-        <h2 class="section-title centered-title">CONTACT ME</h2>
-        <p class="form-intro-text">
-          Let's connect! I'm always open to discussing new opportunities and ideas.
-        </p>
-      </div>
-    </section>
-  
-    <section class="contact-form-section">
-      <div class="section-content-wrapper">
-        <div class="form-card">
-          <!-- Success/Error Messages from server action -->
-          {#if form?.success}
-            <div class="alert alert-success" role="alert">
-              <strong class="font-bold">Success!</strong>
-              <span class="block sm:inline">{form.message || 'Your message has been sent.'}</span>
-            </div>
-          {/if}
-  
-          {#if form?.error}
-            <div class="alert alert-error" role="alert">
-              <strong class="font-bold">Error!</strong>
-              <span class="block sm:inline">{form.message || 'Failed to send your message. Please try again.'}</span>
-            </div>
-          {/if}
-  
-          <form class="contact-form" method="POST" action="?/default" onsubmit={handleSubmit}>
-            <div class="form-group">
-              <label for="name">Your Name <span class="required-asterisk">*</span></label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                autocomplete="name"
-                required
-                placeholder="Enter your name"
-                bind:value={$contactForm.name}
-              />
-            </div>
-            <div class="form-group">
-              <label for="email-address">Email Address <span class="required-asterisk">*</span></label>
-              <input
-                id="email-address"
-                name="email"
-                type="email"
-                autocomplete="email"
-                required
-                placeholder="Enter your email"
-                bind:value={$contactForm.email}
-              />
-            </div>
-            <div class="form-group">
-              <label for="subject">Subject <span class="required-asterisk">*</span></label>
-              <input
-                id="subject"
-                name="subject"
-                type="text"
-                required
-                placeholder="Enter subject"
-                bind:value={$contactForm.subject}
-              />
-            </div>
-            <div class="form-group full-width">
-              <label for="message">Your Message <span class="required-asterisk">*</span></label>
-              <textarea
-                id="message"
-                name="message"
-                rows="6"
-                required
-                placeholder="Write your message here..."
-                bind:value={$contactForm.message}
-              ></textarea>
-            </div>
-  
-            <div class="form-actions">
-              <button
-                type="submit"
-                class="btn btn-submit-message"
-                disabled={$isSubmitting}
-              >
-                <div class="btn-content">
-                  <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="m3 3 3 9-3 9 19-9Z"/>
-                    <path d="m6 12 13 0"/>
-                  </svg>
-                  <span class="btn-text">{$isSubmitting ? 'Sending...' : 'Send Message'}</span>
-                </div>
-                <div class="btn-shine"></div>
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </section>
-  </div>
-  
-  <style>
-    /* Define CSS variables for easier theming */
-    :root {
-        --flutter-blue: #3a9ae9;
-        --svelte-orange: #FF3E00;
-        --text-dark: #2c3e50;
-        --text-medium: #555;
-        --text-light: #f0f0f0;
-        --bg-light-purple: #f8f4fa;
-        --bg-white: #ffffff;
-        --border-color: #e0e0e0;
-        /* --input-border: #909192; */
-        --focus-border: #3b82f6;
-        --shadow-color: rgba(0, 0, 0, 0.1);
-    }
-  
-    .contact-page-container {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-      width: 100%;
-      overflow-x: hidden;
-      color: var(--text-color);
-      line-height: 1.6;
-      background-color: var(--bg-primary);
-      border-radius: 2rem;
-    }
-  
-    .section-content-wrapper {
-        max-width: 800px; /* Adjusted max-width for contact form */
-        margin: 0 auto;
-        padding: 0 1.5rem;
-        box-sizing: border-box;
-    }
-  
-    .contact-header-section {
-      padding: 3rem 0 1.5rem 0; /* Adjusted padding */
-      background-color: var(--bg-primary);
-      text-align: center;
-    }
-  
-    .section-title {
-      font-size: 1.8rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 1rem;
-      color: var(--text-dark);
-      position: relative;
-      display: inline-block; /* Changed to inline-block for centered ::after */
-      padding-bottom: 0.5rem;
-    }
-  
-    .section-title::after {
-      content: '';
-      position: absolute;
-      left: 50%;
-      bottom: 0;
-      transform: translateX(-50%);
-      width: 60px;
-      height: 3px;
-      background-color: var(--svelte-orange);
-      border-radius: 2px;
-    }
-  
-    .form-intro-text {
-      font-size: 1rem; /* Reduced from 1.1rem */
-      color: #777; /* Lighter color, changed from var(--text-medium) */
-      margin-top: 1.5rem;
-      margin-bottom: 2rem;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
-      opacity: 0.8; /* Added subtle opacity */
-    }
-  
-    .contact-form-section {
-      padding: 1.5rem 0 4rem 0; /* Adjusted vertical padding */
-      background-color: var(--bg-primary);
-    }
-  
-    .form-card {
-      background: var(--bg-form); /* Lighter background for contrast */
-      border-radius: 12px;
-      padding: 2.5rem; /* Increased padding */
-      box-shadow: 0 4px 15px var(--shadow-color); /* Stronger shadow */
-      /* border: 1px solid var(--border-color); */
-    }
-  
-    /* Alerts */
-    .alert {
-      padding: 1rem;
-      border-radius: 8px;
-      margin-bottom: 1.5rem; /* Increased margin */
-      font-weight: 500;
-    }
-  
-    .alert-success {
-      background-color: #d1fae5;
-      color: #065f46;
-      border: 1px solid #a7f3d0;
-    }
-  
-    .alert-error {
-      background-color: #fee2e2;
-      color: #991b1b;
-      border: 1px solid #fca5a5;
-    }
-  
-    .contact-form {
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem; /* Space between form groups */
-    }
-  
-    .form-group {
-      display: flex;
-      flex-direction: column;
-    }
-  
-    .form-group.full-width {
-      width: 100%;
-    }
-  
-    .form-group label {
-      font-weight: 600;
-      color: var(--text-color);
-      margin-bottom: 0.5rem;
-      font-size: 0.95rem;
-    }
-  
-    .required-asterisk {
-      color: red;
-      margin-left: 0.25rem; /* Small space after label text */
-    }
-  
-    .form-group input,
-    .form-group textarea {
-      padding: 0.75rem 1rem; /* Slightly more horizontal padding */
-      border: 1px solid var(--input-border);
-      border-radius: 8px; /* Slightly more rounded corners */
-      font-size: 1rem;
-      color: var(--text-dark);
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-      background-color: var(--bg-inner-form);
-    }
-  
-    .form-group input::placeholder,
-    .form-group textarea::placeholder {
-      color: var(--text-medium);
-      opacity: 0.7; /* Slightly faded placeholder */
-    }
-  
-    .form-group input:focus,
-    .form-group textarea:focus {
-      outline: none;
-      border-color: var(--flutter-blue); /* Blue focus color */
-      box-shadow: 0 0 0 3px rgba(58, 154, 233, 0.2); /* Soft blue shadow on focus */
-    }
-  
-    .form-actions {
-      margin-top: 1.5rem;
-      display: flex;
-      justify-content: center; /* Changed from flex-end to center */
-    }
-  
-    .btn {
-      padding: 0;
-      border: none;
-      background: none;
-      cursor: pointer;
-      font-family: inherit;
-    }
-  
-    .btn:disabled {
-      cursor: not-allowed;
-    }
-  
-    /* Enhanced Submit Button Styles */
-    .btn-submit-message {
-      position: relative;
-      overflow: hidden;
-      border-radius: 50px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      min-width: 180px;
-      height: 56px;
-    }
-  
-    .btn-content {
-      position: relative;
-      z-index: 2;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.75rem;
-      padding: 1rem 2rem;
-      color: white;
-      font-weight: 600;
-      font-size: 1rem;
-      transition: all 0.3s ease;
-    }
-  
-    .btn-icon {
-      width: 20px;
-      height: 20px;
-      transition: transform 0.3s ease;
-    }
-  
-    .btn-text {
-      transition: all 0.3s ease;
-    }
-  
-    .btn-shine {
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.3),
-        transparent
-      );
-      transition: left 0.6s ease;
-    }
-  
-    .btn-submit-message:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 40px rgba(102, 126, 234, 0.6);
-      background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-    }
-  
-    .btn-submit-message:hover:not(:disabled) .btn-icon {
-      transform: translateX(4px) rotate(15deg);
-    }
-  
-    .btn-submit-message:hover:not(:disabled) .btn-shine {
-      left: 100%;
-    }
-  
-    .btn-submit-message:active:not(:disabled) {
-      transform: translateY(0);
-      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
-    }
-  
-    .btn-submit-message:disabled {
-      opacity: 0.7;
-      transform: none;
-      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.2);
-    }
-  
-    .btn-submit-message:disabled .btn-content {
-      color: rgba(255, 255, 255, 0.8);
-    }
-  
-    /* Loading animation for disabled state */
-    .btn-submit-message:disabled .btn-icon {
-      animation: spin 1s linear infinite;
-    }
-  
-    @keyframes spin {
-      from {
-        transform: rotate(0deg);
-      }
-      to {
-        transform: rotate(360deg);
-      }
-    }
-  
-    /* Responsive Adjustments */
-    @media (min-width: 768px) {
-      
-      .contact-header-section {
-        padding: 4rem 0 2rem 0;
-      }
-      .section-title {
-        font-size: 2.2rem;
-      }
-      .form-intro-text {
-        font-size: 1.2rem;
-      }
-      .contact-form-section {
-        padding: 0rem 0 5rem 0;
-      }
-      .form-card {
-        padding: 2.0rem;
-      }
-      .contact-form {
-        gap: 0.5rem;
-      }
-    }
-  
-    @media (min-width: 1024px) {
-      .contact-header-section {
-        padding: 5rem 0 2.5rem 0;
-      }
-      .section-title {
-        font-size: 2.5rem;
-      }
-      .form-intro-text {
-        font-size: 1.3rem;
-      }
-      .contact-form-section {
-        padding: 2.5rem 0 6rem 0;
-      }
-      .form-card {
-        padding: 3.5rem;
-      }
-      .contact-form {
-        gap: 1.75rem;
-      }
-    }
-  
-    @media (min-width: 1400px) {
-      .section-content-wrapper {
-        max-width: 900px;
-      }
-    }
-  
-    @media (max-width: 480px) {
-      .btn-submit-message {
-        min-width: 160px;
-        height: 52px;
-      }
-      
-      .btn-content {
-        padding: 0.875rem 1.5rem;
-        font-size: 0.95rem;
-      }
-      
-      .btn-icon {
-        width: 18px;
-        height: 18px;
-      }
-      
-      .contact-form-section {
-        padding: 0rem 0 5rem 0;
-      }
-      .form-card {
-        padding: 1.5rem;
-      }
-      .section-content-wrapper {
-        padding: 0.5rem;
-      }
-    }
-  </style>
+	import { enhance } from '$app/forms';
+	import Section from '$lib/components/ui/Section.svelte';
+	import { reveal } from '$lib/actions/reveal';
+
+	let { form } = $props();
+
+	let isSubmitting = $state(false);
+
+	const channels = [
+		{
+			label: 'Email',
+			value: 'obsannew@gmail.com',
+			href: 'mailto:obsannew@gmail.com',
+			path: 'M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z'
+		},
+		{
+			label: 'Telegram',
+			value: '@OBDREAMER',
+			href: 'https://t.me/OBDREAMER',
+			path: 'M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z'
+		},
+		{
+			label: 'Phone',
+			value: '+251 940 844 097',
+			href: 'tel:+251940844097',
+			path: 'M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.05-.24 11.4 11.4 0 0 0 3.57.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .57 3.57 1 1 0 0 1-.25 1.05z'
+		}
+	];
+</script>
+
+<Section
+	index="06"
+	eyebrow="Get in touch"
+	title="Let's talk about what you're building"
+	lead="Open to full-time roles, contract work and freelance projects. The fastest route is email or Telegram, I answer both within a day."
+	tone="inset"
+>
+	<div class="grid">
+		<!-- Direct channels first: they always work, regardless of the form. -->
+		<aside class="channels" data-reveal use:reveal={{ y: 22 }}>
+			<h3 class="block-label">Reach me directly</h3>
+
+			<ul class="channel-list">
+				{#each channels as channel}
+					<li>
+						<a href={channel.href} target={channel.href.startsWith('http') ? '_blank' : null} rel="noopener noreferrer">
+							<span class="icon" aria-hidden="true">
+								<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+									<path d={channel.path} />
+								</svg>
+							</span>
+							<span class="channel-text">
+								<span class="channel-label">{channel.label}</span>
+								<span class="channel-value">{channel.value}</span>
+							</span>
+							<svg class="chevron" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<path d="M7 17 17 7M9 7h8v8" />
+							</svg>
+						</a>
+					</li>
+				{/each}
+			</ul>
+
+			<div class="locale">
+				<h3 class="block-label">Based in</h3>
+				<p>Addis Ababa, Ethiopia, <abbr title="East Africa Time, UTC+3">EAT (UTC+3)</abbr></p>
+				<p class="locale-note">Working remotely with teams across other time zones.</p>
+			</div>
+		</aside>
+
+		<div class="form-card" data-reveal use:reveal={{ y: 26, delay: 80 }}>
+			{#if form?.success}
+				<div class="alert success" role="status">
+					<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="m5 13 4 4L19 7" />
+					</svg>
+					<p><strong>Message sent.</strong> {form.message || "I'll get back to you shortly."}</p>
+				</div>
+			{/if}
+
+			{#if form?.error}
+				<div class="alert error" role="alert">
+					<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<circle cx="12" cy="12" r="9" />
+						<path d="M12 8v5M12 16.5v.01" />
+					</svg>
+					<p>
+						<strong>Couldn't send that.</strong>
+						{form.message || 'Please try again, or email me directly at obsannew@gmail.com.'}
+					</p>
+				</div>
+			{/if}
+
+			<form
+				class="contact-form"
+				method="POST"
+				action="/sections/contact"
+				use:enhance={() => {
+					isSubmitting = true;
+					return async ({ update }) => {
+						isSubmitting = false;
+						await update();
+					};
+				}}
+			>
+				<div class="field">
+					<label for="name">Name <span aria-hidden="true">*</span></label>
+					<input id="name" name="name" type="text" autocomplete="name" required placeholder="Your name" />
+				</div>
+
+				<div class="field">
+					<label for="email-address">Email <span aria-hidden="true">*</span></label>
+					<input
+						id="email-address"
+						name="email"
+						type="email"
+						autocomplete="email"
+						required
+						placeholder="you@company.com"
+					/>
+				</div>
+
+				<div class="field full">
+					<label for="subject">Subject <span aria-hidden="true">*</span></label>
+					<input id="subject" name="subject" type="text" required placeholder="Role, project or question" />
+				</div>
+
+				<div class="field full">
+					<label for="message">Message <span aria-hidden="true">*</span></label>
+					<textarea id="message" name="message" rows="6" required placeholder="A couple of lines about what you have in mind."></textarea>
+				</div>
+
+				<div class="field full actions">
+					<button type="submit" class="submit" disabled={isSubmitting}>
+						<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="m3 3 3 9-3 9 19-9Z" />
+							<path d="M6 12h13" />
+						</svg>
+						{isSubmitting ? 'Sending…' : 'Send message'}
+					</button>
+					<p class="required-note">All fields required.</p>
+				</div>
+			</form>
+		</div>
+	</div>
+</Section>
+
+<style>
+	.grid {
+		display: grid;
+		gap: clamp(1.5rem, 4vw, 3rem);
+		align-items: start;
+	}
+
+	.block-label {
+		font-family: var(--font-body);
+		font-size: var(--fs-eyebrow);
+		font-weight: 600;
+		letter-spacing: var(--tracking-eyebrow);
+		text-transform: uppercase;
+		color: var(--text-subtle);
+		margin-bottom: var(--sp-4);
+	}
+
+	/* ---- Channels -------------------------------------------------------- */
+
+	.channel-list {
+		list-style: none;
+		display: grid;
+		gap: 0.5rem;
+	}
+
+	.channel-list a {
+		display: grid;
+		grid-template-columns: auto 1fr auto;
+		align-items: center;
+		gap: var(--sp-4);
+		padding: 0.85rem 1rem;
+		border: 1px solid var(--line);
+		border-radius: var(--r-md);
+		background: var(--bg-elev-1);
+		text-decoration: none;
+		transition:
+			border-color var(--dur-fast) var(--ease-out),
+			transform var(--dur-fast) var(--ease-out),
+			background-color var(--dur-fast) var(--ease-out);
+	}
+
+	.channel-list a:hover {
+		border-color: var(--accent-edge);
+		transform: translateX(3px);
+	}
+
+	.icon {
+		display: grid;
+		place-items: center;
+		width: 34px;
+		height: 34px;
+		border-radius: var(--r-sm);
+		background: var(--accent-wash);
+		color: var(--accent-ink);
+	}
+
+	.channel-text {
+		display: grid;
+		min-width: 0;
+	}
+
+	.channel-label {
+		font-size: var(--fs-xs);
+		color: var(--text-subtle);
+	}
+
+	.channel-value {
+		font-size: var(--fs-sm);
+		font-weight: 600;
+		color: var(--text);
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.chevron {
+		color: var(--text-subtle);
+		transition: transform var(--dur-fast) var(--ease-out);
+	}
+
+	.channel-list a:hover .chevron {
+		transform: translate(2px, -2px);
+		color: var(--accent);
+	}
+
+	.locale {
+		margin-top: var(--sp-7);
+		padding-top: var(--sp-6);
+		border-top: 1px solid var(--line);
+	}
+
+	.locale p {
+		font-size: var(--fs-sm);
+		color: var(--text-muted);
+	}
+
+	.locale abbr {
+		text-decoration: none;
+		border-bottom: 1px dotted var(--line-strong);
+		cursor: help;
+	}
+
+	.locale-note {
+		margin-top: 0.35rem;
+		color: var(--text-subtle) !important;
+		font-size: var(--fs-xs) !important;
+	}
+
+	/* ---- Form ------------------------------------------------------------ */
+
+	.form-card {
+		padding: clamp(1.5rem, 4vw, 2.25rem);
+		border: 1px solid var(--line);
+		border-radius: var(--r-lg);
+		background: var(--bg-elev-1);
+		box-shadow: var(--shadow-sm);
+	}
+
+	.alert {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: var(--sp-3);
+		align-items: start;
+		padding: 0.9rem 1rem;
+		margin-bottom: var(--sp-5);
+		border-radius: var(--r-sm);
+		border: 1px solid;
+		font-size: var(--fs-sm);
+	}
+
+	.alert svg {
+		margin-top: 0.15rem;
+	}
+
+	.alert.success {
+		background: var(--ok-wash);
+		border-color: var(--ok-edge);
+		color: var(--ok);
+	}
+
+	.alert.error {
+		background: var(--danger-wash);
+		border-color: var(--danger-edge);
+		color: var(--danger);
+	}
+
+	.alert p {
+		color: var(--text);
+	}
+
+	.alert strong {
+		font-weight: 600;
+	}
+
+	.contact-form {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: var(--sp-4);
+	}
+
+	.field {
+		display: grid;
+		gap: 0.4rem;
+		min-width: 0;
+	}
+
+	.field label {
+		font-size: var(--fs-xs);
+		font-weight: 600;
+		color: var(--text-muted);
+	}
+
+	.field label span {
+		color: var(--accent-ink);
+	}
+
+	.field input,
+	.field textarea {
+		width: 100%;
+		padding: 0.7rem 0.85rem;
+		border: 1px solid var(--line-strong);
+		border-radius: var(--r-sm);
+		background: var(--bg);
+		color: var(--text);
+		font-size: var(--fs-sm);
+		font-family: inherit;
+		transition:
+			border-color var(--dur-fast) var(--ease-out),
+			box-shadow var(--dur-fast) var(--ease-out);
+	}
+
+	.field textarea {
+		resize: vertical;
+		min-height: 8rem;
+	}
+
+	.field input::placeholder,
+	.field textarea::placeholder {
+		color: var(--text-subtle);
+	}
+
+	.field input:focus-visible,
+	.field textarea:focus-visible {
+		outline: none;
+		border-color: var(--accent);
+		box-shadow: 0 0 0 3px var(--accent-wash);
+	}
+
+	.actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--sp-4);
+		margin-top: var(--sp-2);
+	}
+
+	.submit {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.75rem 1.4rem;
+		border: 0;
+		border-radius: var(--r-pill);
+		background: var(--text);
+		color: var(--bg);
+		font-size: var(--fs-sm);
+		font-weight: 600;
+		cursor: pointer;
+		transition:
+			transform var(--dur-fast) var(--ease-out),
+			opacity var(--dur-fast) var(--ease-out);
+	}
+
+	.submit:hover:not(:disabled) {
+		transform: translateY(-2px);
+	}
+
+	.submit:disabled {
+		opacity: 0.6;
+		cursor: progress;
+	}
+
+	.submit svg {
+		transition: transform var(--dur-base) var(--ease-out);
+	}
+
+	.submit:hover:not(:disabled) svg {
+		transform: translateX(3px);
+	}
+
+	.required-note {
+		font-size: var(--fs-xs);
+		color: var(--text-subtle);
+	}
+
+	/* ---- Layout ---------------------------------------------------------- */
+
+	@media (min-width: 640px) {
+		.contact-form {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+
+		.field.full {
+			grid-column: 1 / -1;
+		}
+	}
+
+	@media (min-width: 900px) {
+		.grid {
+			grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+		}
+	}
+</style>
