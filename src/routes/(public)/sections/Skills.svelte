@@ -4,6 +4,7 @@
 	import { reveal } from '$lib/actions/reveal';
 	import Section from '$lib/components/ui/Section.svelte';
 	import type ReactGlobe from '$lib/components/globe.svelte';
+	import { CLOUD_ID } from '$lib/components/react/cloudId.js';
 
 	/** simple-icons slugs rendered into the rotating cloud. */
 	const simpleIconSlugs = [
@@ -146,6 +147,8 @@
 	let showClickHint = $state(true);
 	let highlightTimer: ReturnType<typeof setTimeout> | null = null;
 
+	let globeSideEl = $state<HTMLElement | null>(null);
+
 	function techColor(name: string) {
 		return techColors[name]?.primary ?? 'var(--accent)';
 	}
@@ -169,6 +172,87 @@
 			if (highlightTimer) clearTimeout(highlightTimer);
 		};
 	});
+
+	/**
+	 * A light rotational nudge tied to the visitor's own scrolling, on top of
+	 * the globe's idle drift and direct drag — only while this section is at
+	 * least partly in view, so it costs nothing the rest of the page.
+	 *
+	 * This talks to the `TagCanvas` global directly (the engine
+	 * `react-icon-cloud` starts the globe's canvas under, keyed by
+	 * `cloudId.CLOUD_ID`) rather than routing the nudge through a Svelte prop
+	 * into React: an earlier version stored it as component state and passed
+	 * it down to the globe, which meant every scroll frame re-rendered the
+	 * whole React tree — dozens of `root.render()` calls a second while
+	 * scrolling, which is what made the rotation stutter and keep snapping
+	 * back to its start instead of settling smoothly. Desktop only (mouse
+	 * hover + fine pointer) — touch's drag-to-spin is tuned separately in
+	 * globe.jsx and doesn't need or want this on top of it.
+	 *
+	 * Visibility is a plain `getBoundingClientRect()` check inside the scroll
+	 * handler itself rather than a separate IntersectionObserver — the header
+	 * title rotator above hit the exact same failure mode (see its own
+	 * comment): an IO's boolean can miss a crossing under fast scrolling and
+	 * get stuck `true`, which here meant the nudge kept firing anywhere on
+	 * the page once it had latched on, not just near the globe.
+	 */
+	onMount(() => {
+		if (!window.matchMedia?.('(hover: hover) and (pointer: fine)').matches) return;
+
+		let lastY = window.scrollY;
+		let raf = 0;
+		let decayRaf = 0;
+
+		function nudgeGlobe(dx: number, dy: number) {
+			const TagCanvas = (window as any).TagCanvas;
+			if (!TagCanvas) return;
+			const canvasId = 'canvas-' + CLOUD_ID;
+			// Matches globe.jsx's non-touch `options.initial` — the units
+			// TagCanvas.SetSpeed expects (it multiplies by the cloud's own
+			// maxSpeed internally).
+			const idle = [0.1, -0.1];
+
+			if (decayRaf) cancelAnimationFrame(decayRaf);
+			let x = idle[0] + dx;
+			let y = idle[1] + dy;
+
+			const step = () => {
+				x += (idle[0] - x) * 0.12;
+				y += (idle[1] - y) * 0.12;
+				const applied = TagCanvas.SetSpeed(canvasId, [x, y]);
+				if (!applied) return;
+				if (Math.abs(x - idle[0]) > 0.001 || Math.abs(y - idle[1]) > 0.001) {
+					decayRaf = requestAnimationFrame(step);
+				}
+			};
+			decayRaf = requestAnimationFrame(step);
+		}
+
+		const onScroll = () => {
+			if (raf) return;
+			raf = requestAnimationFrame(() => {
+				raf = 0;
+				const dy = window.scrollY - lastY;
+				lastY = window.scrollY;
+				if (Math.abs(dy) < 2) return;
+
+				const rect = globeSideEl?.getBoundingClientRect();
+				const margin = window.innerHeight * 0.2;
+				const visible = rect && rect.bottom > -margin && rect.top < window.innerHeight + margin;
+				if (!visible) return;
+
+				const kick = Math.max(-0.16, Math.min(0.16, dy * 0.012));
+				nudgeGlobe(kick, kick * -0.5);
+			});
+		};
+		window.addEventListener('scroll', onScroll, { passive: true });
+
+		return () => {
+			window.removeEventListener('scroll', onScroll);
+			if (raf) cancelAnimationFrame(raf);
+			if (decayRaf) cancelAnimationFrame(decayRaf);
+		};
+	});
 </script>
 
 <Section
@@ -176,10 +260,11 @@
 	eyebrow="Toolkit"
 	title="The stack I actually ship with"
 	lead="Not a list of everything I have touched. These are the tools I use on real, released work, spin the cloud and tap an icon to find it in the list below."
-	ambient
+	tone="window"
+	motif="rings"
 >
 	<div class="layout">
-		<div class="globe-side" data-reveal use:reveal={{ y: 24, scale: 0.96 }}>
+		<div class="globe-side" data-reveal use:reveal={{ y: 24, scale: 0.96 }} bind:this={globeSideEl}>
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<div class="globe-area" onclick={() => (showClickHint = false)}>

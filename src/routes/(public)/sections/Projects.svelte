@@ -67,7 +67,7 @@
 			title="Cross-platform apps, built in Flutter and shipped to production"
 			lead="Delivery, fintech and planning apps running on iOS and Android from one Dart codebase. Real-time data with Firebase, offline-first local storage, third-party payment and mapping integrations, and release pipelines to both stores."
 			class="theme-flutter"
-			ambient
+			tone="window"
 		>
 			{#snippet aside()}
 				<span class="count">{flutterProjects.length} projects</span>
@@ -100,6 +100,8 @@
 			lead="Fast, accessible interfaces backed by Postgres. Server-side rendering and form actions, Supabase auth with route guards, custom admin tooling, and continuous deployment to Vercel."
 			class="theme-svelte"
 			tone="inset"
+			fadeIn
+			motif="scan"
 		>
 			{#snippet aside()}
 				<span class="count">{webProjects.length} projects</span>

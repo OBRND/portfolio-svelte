@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import Section from '$lib/components/ui/Section.svelte';
 	import { reveal } from '$lib/actions/reveal';
+	import { ripple } from '$lib/actions/ripple';
 
 	let { form } = $props();
 
@@ -132,7 +133,7 @@
 				</div>
 
 				<div class="field full actions">
-					<button type="submit" class="submit" disabled={isSubmitting}>
+					<button type="submit" class="submit" disabled={isSubmitting} use:ripple>
 						<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 							<path d="m3 3 3 9-3 9 19-9Z" />
 							<path d="M6 12h13" />
@@ -380,6 +381,10 @@
 
 	.submit:hover:not(:disabled) {
 		transform: translateY(-2px);
+	}
+
+	.submit:active:not(:disabled) {
+		transform: translateY(0) scale(0.97);
 	}
 
 	.submit:disabled {

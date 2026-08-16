@@ -84,6 +84,8 @@
 	title="Why I build with Flutter and SvelteKit"
 	lead="Two tools, chosen for different jobs. Here is why I reach for each one, in plain terms, and what that choice is actually worth to whoever is paying for the build."
 	tone="inset"
+	fadeIn
+	motif="split"
 >
 	<div class="grid">
 		{#each cases as item, cardIndex}

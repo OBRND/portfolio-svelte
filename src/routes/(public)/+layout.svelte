@@ -5,6 +5,8 @@
 	import { onMount } from 'svelte';
 	import { quintOut } from 'svelte/easing';
 	import { reducedMotion } from '$lib/stores/motion';
+	import { scramble } from '$lib/actions/scramble';
+	import { cursorGlow } from '$lib/actions/cursorGlow';
 
 	let { children } = $props();
 
@@ -117,11 +119,7 @@
 		 * getBoundingClientRect() reads and is unconditionally correct.
 		 */
 		const dividerEls = Array.from(document.querySelectorAll<HTMLElement>('[data-divider]'));
-		dividerTexts = dividerEls.map((el) => {
-			const index = el.querySelector('.index')?.textContent?.trim() ?? '';
-			const eyebrow = el.querySelector('.eyebrow')?.textContent?.trim() ?? '';
-			return [index, eyebrow].filter(Boolean).join(' ');
-		});
+		dividerTexts = dividerEls.map((el) => el.querySelector('.eyebrow')?.textContent?.trim() ?? '');
 
 		function recomputeDivider() {
 			const headerHeight = navbarEl?.offsetHeight ?? 64;
@@ -191,7 +189,7 @@
 		reactive statements) and a `position: fixed` containing block that trapped
 		every overlay inside it.
 	-->
-	<footer class="site-footer" bind:this={footerEl}>
+	<footer class="site-footer" bind:this={footerEl} use:cursorGlow>
 		<div class="footer-inner">
 			<div class="footer-top">
 				<div class="footer-brand">
@@ -247,6 +245,17 @@
 	</footer>
 
 	<div class="page">
+		<!--
+			The ground the whole page is laid over. Sections with `tone="window"`
+			leave their own ground unpainted and reveal this instead — the same
+			move the footer above already makes, turned inward.
+		-->
+		<div class="substrate-track" aria-hidden="true">
+			<div class="page-substrate">
+				<div class="substrate-bloom"></div>
+			</div>
+		</div>
+
 		<header class="navbar" class:scrolled bind:this={navbarEl}>
 			<div class="nav-inner">
 				<div class="brand">
@@ -269,9 +278,8 @@
 								class="title-slide"
 								in:titleSlide={{ y: titleDir * 18 }}
 								out:titleSlide={{ y: titleDir * -18 }}
-							>
-								{headerTitle}
-							</span>
+								use:scramble={headerTitle}
+							></span>
 						{/key}
 					</div>
 				</div>
@@ -587,10 +595,126 @@
 
 	/* ---- Page & footer reveal --------------------------------------------- */
 
+	/*
+		No ground of its own any more — `.page-substrate` below is what makes the
+		page opaque over the fixed footer. Painting it here as well would put an
+		unbroken sheet behind every section and there would be nothing for a
+		window section to reveal.
+	*/
 	.page {
 		position: relative;
 		z-index: var(--z-content);
+	}
+
+	/*
+		Sticky rather than fixed, which matters: a fixed layer would have to sit
+		above --z-footer to show through a window, and being opaque it would then
+		cover the footer and kill the reveal below. Sticky scopes it to `.page`,
+		so it unpins exactly where `.page` ends — which is where the footer
+		reveal already begins. The two compose instead of fighting.
+
+		One viewport tall, then pulled back out of flow, so the browser paints a
+		single screen of gradients once instead of a canvas the height of the
+		whole document. It holds still while the content scrolls over it, which
+		is where the parallax comes from — no scroll listener involved.
+	*/
+	/*
+		The track spans `.page` and takes the layer out of flow, so it adds no
+		page height. It also supplies the sticky child's constraint rectangle,
+		which is the part that matters: pulling the layer out of flow with a
+		`margin-bottom: -100dvh` instead lets its *border* box overhang the
+		containing block by a full viewport, and it ends up painted over the
+		footer — swallowing the reveal at the bottom of the page.
+	*/
+	/*
+		Deliberately no `overflow` here. An ancestor with a non-visible overflow
+		becomes the sticky child's scroll container, and since this track never
+		scrolls, the layer would silently stop sticking and sit at the top of
+		the page instead — leaving every window section showing the fixed footer
+		behind it. Clipping happens on `.page-substrate` itself, which is safe.
+	*/
+	.substrate-track {
+		position: absolute;
+		inset: 0;
+		z-index: 0;
+		pointer-events: none;
+	}
+
+	.page-substrate {
+		position: sticky;
+		top: 0;
+		height: 100dvh;
 		background: var(--bg);
+		overflow: hidden;
+	}
+
+	/* The blueprint itself. Masked to fall away toward the edges so it reads as
+	   texture under the content rather than as graph paper. */
+	.page-substrate::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background:
+			repeating-linear-gradient(
+				to right,
+				var(--grid-major) 0 1px,
+				transparent 1px calc(var(--grid-pitch) * 5)
+			),
+			repeating-linear-gradient(
+				to bottom,
+				var(--grid-major) 0 1px,
+				transparent 1px calc(var(--grid-pitch) * 5)
+			),
+			repeating-linear-gradient(
+				to right,
+				var(--grid-line) 0 1px,
+				transparent 1px var(--grid-pitch)
+			),
+			repeating-linear-gradient(
+				to bottom,
+				var(--grid-line) 0 1px,
+				transparent 1px var(--grid-pitch)
+			);
+		-webkit-mask-image: radial-gradient(120% 100% at 50% 0%, #000 35%, transparent 92%);
+		mask-image: radial-gradient(120% 100% at 50% 0%, #000 35%, transparent 92%);
+	}
+
+	/*
+		The two brand blooms, on their own element so a transform can move them.
+		Oversized and offset upward so the drift below never exposes an edge.
+	*/
+	.substrate-bloom {
+		position: absolute;
+		inset: -20% 0 -20%;
+		background: var(--ambient);
+	}
+
+	/*
+		Scroll-driven animations run entirely off the compositor — no main-thread
+		work per frame, nothing to throttle. Browsers without support simply keep
+		the static layer, which already parallaxes on its own.
+	*/
+	@supports (animation-timeline: scroll()) {
+		@media (prefers-reduced-motion: no-preference) {
+			.substrate-bloom {
+				animation: bloom-drift linear both;
+				animation-timeline: scroll(root block);
+			}
+		}
+	}
+
+	@keyframes bloom-drift {
+		to {
+			transform: translate3d(0, -12%, 0);
+		}
+	}
+
+	@media (max-width: 768px) {
+		/* Widened so the 1px lines do not turn into moiré on a dense phone
+		   display, where the grid is also proportionally much busier. */
+		.substrate-track {
+			--grid-pitch: 88px;
+		}
 	}
 
 	.main-content {
@@ -626,6 +750,7 @@
 			var(--bg);
 		border-top: 1px solid var(--line);
 		color: var(--text-muted);
+		overflow: hidden;
 	}
 
 	/* Echoes the nav's scroll-progress bar at the opposite end of the page. */
@@ -638,7 +763,27 @@
 		opacity: 0.7;
 	}
 
+	/* Soft glow trailing the cursor over the footer, driven by
+	   src/lib/actions/cursorGlow.ts. Plain white rather than a theme token —
+	   the footer is a fixed dark ground regardless of site theme (see above),
+	   so a low-opacity white reads correctly no matter what theme is active. */
+	.site-footer::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: radial-gradient(
+			420px circle at var(--glow-x, 50%) var(--glow-y, 50%),
+			rgba(255, 255, 255, 0.07),
+			transparent 70%
+		);
+		opacity: var(--glow-opacity, 0);
+		transition: opacity 500ms var(--ease-out);
+		pointer-events: none;
+	}
+
 	.footer-inner {
+		position: relative;
+		z-index: 1;
 		width: 100%;
 		max-width: var(--maxw);
 		margin-inline: auto;

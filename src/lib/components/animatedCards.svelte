@@ -1,5 +1,7 @@
 <script lang="ts">
 	import Modal from '$lib/components/ui/Modal.svelte';
+	import { tilt } from '$lib/actions/tilt';
+	import { ripple } from '$lib/actions/ripple';
 
 	export interface ServiceModalData {
 		title: string;
@@ -42,6 +44,7 @@
 	onmouseenter={() => (isHovered = true)}
 	onmouseleave={() => (isHovered = false)}
 	style="--shape-color: {animationColor};"
+	use:tilt={{ max: 5 }}
 >
 	<div class="card-content">
 		{#if logo}
@@ -90,7 +93,7 @@
 		button. Its ::after stretches over the whole card, so the entire surface
 		stays clickable while there is exactly one tab stop and one accessible name.
 	-->
-	<button class="card-button" onclick={() => (isModalOpen = true)}>
+	<button class="card-button" onclick={() => (isModalOpen = true)} use:ripple>
 		<span>{buttonText}</span>
 		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="arrow-icon" aria-hidden="true">
 			<line x1="5" y1="12" x2="19" y2="12" />
@@ -153,14 +156,17 @@
 		box-shadow: var(--shadow-sm);
 		overflow: hidden;
 		isolation: isolate;
+		transform: perspective(1000px) translateY(0) rotateX(var(--tilt-rx, 0deg))
+			rotateY(var(--tilt-ry, 0deg));
 		transition:
-			transform var(--dur-base) var(--ease-out),
+			transform var(--tilt-transition, var(--dur-base)) var(--ease-out),
 			box-shadow var(--dur-base) var(--ease-out),
 			border-color var(--dur-base) var(--ease-out);
 	}
 
 	.animated-card:hover {
-		transform: translateY(-3px);
+		transform: perspective(1000px) translateY(-3px) rotateX(var(--tilt-rx, 0deg))
+			rotateY(var(--tilt-ry, 0deg));
 		border-color: var(--shape-color);
 		box-shadow: var(--shadow-lg);
 	}
@@ -341,6 +347,10 @@
 
 	.animated-card:hover .card-button {
 		transform: translateX(4px);
+	}
+
+	.card-button:active {
+		transform: scale(0.96);
 	}
 
 	.arrow-icon {

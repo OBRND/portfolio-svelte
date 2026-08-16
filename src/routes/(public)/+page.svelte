@@ -13,7 +13,7 @@
 	<title>Obsan Diribsa: Flutter &amp; SvelteKit Developer</title>
 	<meta
 		name="description"
-		content="Cross-platform mobile developer building production Flutter apps and server-rendered SvelteKit web apps. Delivery, fintech and planning products shipped to the App Store and Play Store."
+		content="Flutter and SvelteKit developer in Addis Ababa. I design the systems behind the apps: data models, services, customer and operator apps, admin consoles."
 	/>
 </svelte:head>
 

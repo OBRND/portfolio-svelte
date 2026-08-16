@@ -214,6 +214,8 @@
 	eyebrow="What I deliver"
 	title="What I can be hired to do"
 	lead="Six areas of work, each described by what actually gets delivered rather than by adjectives. Open any card for the full scope and the stack it runs on."
+	fadeOut
+	motif="dots"
 >
 	<div class="card-grid">
 		{#each servicesData as service, index}

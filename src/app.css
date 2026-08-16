@@ -76,6 +76,21 @@
   ),
   radial-gradient(720px 420px at 6% 4%, rgba(255, 62, 0, 0.05), transparent 60%);
 
+  /* ---- Substrate ------------------------------------------------------- */
+  /* The blueprint grid on the pinned layer behind the page (see
+     `.page-substrate` in the public layout). Light reads as paper with a
+     print grid, so it stays well under the hairline rules; dark can carry a
+     little more since it is drawing light on black rather than ink on white. */
+  --grid-line: rgba(17, 17, 19, 0.03);
+  --grid-major: rgba(17, 17, 19, 0.05);
+  --grid-pitch: 64px;
+
+  /* Section motifs (see `motif` in src/lib/components/ui/Section.svelte). These
+     scroll with their section, so they read as a layer in front of the pinned
+     substrate rather than part of it. */
+  --motif-line: rgba(17, 17, 19, 0.075);
+  --motif-dot: rgba(17, 17, 19, 0.13);
+
   /* ---- Type system ----------------------------------------------------- */
   --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
   --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -201,6 +216,12 @@
     transparent 62%
   ),
   radial-gradient(780px 460px at 4% 2%, rgba(255, 107, 61, 0.12), transparent 60%);
+
+  --grid-line: rgba(255, 255, 255, 0.045);
+  --grid-major: rgba(255, 255, 255, 0.075);
+
+  --motif-line: rgba(255, 255, 255, 0.09);
+  --motif-dot: rgba(255, 255, 255, 0.14);
 
   color-scheme: dark;
 }
@@ -441,6 +462,73 @@ select {
   opacity: 1;
   transform: none;
   will-change: auto;
+}
+
+/* ==========================================================================
+   Tactile press feedback — src/lib/actions/ripple.ts inserts `.u-ripple-clip`
+   as a button's first child and drops a `.u-ripple-dot` into it per press.
+   `.u-ripple-clip` is what actually clips the dot to the button's shape;
+   the action gives the button itself `position: relative` (if it did not
+   already have one) rather than `overflow: hidden`, since a couple of
+   callers rely on an oversized `::after` for hit-area that clipping would
+   also cut off.
+   ========================================================================== */
+
+.u-ripple-clip {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.u-ripple-dot {
+  position: absolute;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.28;
+  transform: scale(0);
+  animation: u-ripple 550ms ease-out forwards;
+}
+
+@keyframes u-ripple {
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* ==========================================================================
+   Cursor wake — src/lib/actions/cursorWake.ts appends `.u-wake` to its host
+   and animates the pooled dots inside it through the Web Animations API, so
+   position, size and opacity are all set from script. Everything static about
+   a dot lives here.
+   ========================================================================== */
+
+.u-wake {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  /* Above the ambient washes the host paints on its own pseudo-elements, but
+     still under the content, which carries its own stacking. */
+  z-index: 0;
+}
+
+.u-wake-dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  opacity: 0;
+  /* A soft spark rather than a hard bead — the same "emitted light" read the
+     orbiting marks around the portrait have. */
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--wake-color, var(--flutter)) 85%, white) 0%,
+    color-mix(in srgb, var(--wake-color, var(--flutter)) 55%, transparent) 45%,
+    transparent 72%
+  );
 }
 
 /* ==========================================================================

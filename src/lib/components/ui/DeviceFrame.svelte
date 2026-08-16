@@ -38,22 +38,44 @@
 
 	const currentSrc = $derived(usingFallback ? fallbackSrc : src);
 
-	// Reset the load state when the stack deals a different project into this
-	// frame, otherwise a previously-failed image keeps the error state forever.
-	$effect(() => {
-		src;
-		failed = false;
-		loaded = false;
-		usingFallback = false;
-		naturalAspect = null;
-	});
+	let imgEl = $state<HTMLImageElement | null>(null);
+	/** The source the load state currently describes. */
+	let settledSrc = '';
 
-	function onImageLoad(event: Event) {
+	function applyLoaded(img: HTMLImageElement) {
 		loaded = true;
-		const img = event.currentTarget as HTMLImageElement;
 		if (img.naturalWidth && img.naturalHeight) {
 			naturalAspect = `${img.naturalWidth} / ${img.naturalHeight}`;
 		}
+	}
+
+	$effect(() => {
+		const source = src;
+		const img = imgEl;
+
+		// Reset only on a genuinely different project. This effect also re-runs
+		// whenever the deck re-renders the frame in place — promoting a card
+		// does exactly that — and clearing the state then would strand the
+		// frame at `loaded = false` forever, since the untouched <img> has no
+		// reason to fire `load` a second time.
+		if (source !== settledSrc) {
+			settledSrc = source;
+			failed = false;
+			loaded = false;
+			usingFallback = false;
+			naturalAspect = null;
+		}
+
+		// An image the browser has already decoded — because the card beneath
+		// the top one preloaded it, or because the deck has looped past this
+		// project before — will not announce itself. Read the result straight
+		// off the element rather than waiting for an event that has been and
+		// gone.
+		if (img?.complete && img.naturalWidth) applyLoaded(img);
+	});
+
+	function onImageLoad(event: Event) {
+		applyLoaded(event.currentTarget as HTMLImageElement);
 	}
 
 	function onImageError() {
@@ -98,6 +120,7 @@
 	<div class="screen">
 		{#if currentSrc && !failed}
 			<img
+				bind:this={imgEl}
 				src={currentSrc}
 				{alt}
 				{loading}
