@@ -32,6 +32,7 @@
 		"react": "^19.1.0",
 		"react-dom": "^19.1.0",
 		"react-icon-cloud": "^4.1.7",
+		"resend": "^6.20.0",
 		"simple-icons": "^14.14.0"
 	}
 }

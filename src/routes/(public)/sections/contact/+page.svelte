@@ -8,6 +8,13 @@
 
 	let isSubmitting = $state(false);
 
+	// Stamped on the client after hydration, so a cached SSR page cannot hand a
+	// stale timestamp to the server's minimum-fill-time spam check.
+	let startedAt = $state('');
+	$effect(() => {
+		startedAt = Date.now().toString();
+	});
+
 	const channels = [
 		{
 			label: 'Email',
@@ -34,7 +41,7 @@
 	index="06"
 	eyebrow="Get in touch"
 	title="Let's talk about what you're building"
-	lead="Open to full-time roles, contract work and freelance projects. The fastest route is email or Telegram, I answer both within a day."
+	lead="Open to full-time roles, contract work and freelance projects. Email and Telegram both reach me directly, and anything sent through the form below lands in the same inbox. I read every message that comes in and usually reply within a day."
 	tone="inset"
 >
 	<div class="grid">
@@ -105,6 +112,13 @@
 					};
 				}}
 			>
+				<!-- Spam traps: offscreen rather than display:none, which bots detect. -->
+				<div class="hp" aria-hidden="true">
+					<label for="company">Company</label>
+					<input id="company" name="company" type="text" tabindex="-1" autocomplete="off" />
+				</div>
+				<input type="hidden" name="started_at" value={startedAt} />
+
 				<div class="field">
 					<label for="name">Name <span aria-hidden="true">*</span></label>
 					<input id="name" name="name" type="text" autocomplete="name" required placeholder="Your name" />
@@ -140,7 +154,7 @@
 						</svg>
 						{isSubmitting ? 'Sending…' : 'Send message'}
 					</button>
-					<p class="required-note">All fields required.</p>
+					<p class="required-note">All fields required. This goes straight to my inbox, I read everything sent here.</p>
 				</div>
 			</form>
 		</div>
@@ -310,6 +324,16 @@
 		display: grid;
 		gap: 0.4rem;
 		min-width: 0;
+	}
+
+	/* Honeypot. Taken out of flow so it occupies no grid track, and pushed
+	   offscreen instead of display:none so naive bots still fill it in. */
+	.hp {
+		position: absolute;
+		left: -9999px;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
 	}
 
 	.field label {

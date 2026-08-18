@@ -1,77 +1,110 @@
 import { supabaseServer } from "$lib/server/supabase.js";
+import { sendContactNotification } from "$lib/server/email.js";
+import { checkRateLimit } from "$lib/server/rate-limit.js";
 import { fail } from "@sveltejs/kit";
 
-// This action handles the form submission from the contact page.
+const CONTACT_FALLBACK = "obsannew@gmail.com";
+
+// One shared string: the honeypot and too-fast paths return the same success
+// text as a real send, so a bot cannot tell the difference between them.
+const SENT_MESSAGE = "It's in my inbox, I read every message that comes through here and will get back to you shortly.";
+
+// Bots tend to submit the instant the DOM is parsed. Real people need at least
+// a few seconds to type four fields.
+const MIN_FILL_MS = 3000;
+
+// This handles the form submission from the contact page: it stores the message
+// in Supabase and emails it to me. The two are deliberately independent, so one
+// failing does not lose the message.
 export const actions = {
-  default: async ({ request }) => {
-    console.log("Contact form submission received.");
+  default: async ({ request, getClientAddress }) => {
     try {
       const formData = await request.formData();
 
-      // Extract form data
+      // --- 1. Spam heuristics ---------------------------------------------
+      // Both of these return a fake success: a bot that gets a real error just
+      // learns what to change.
+
+      // Honeypot: hidden from users, irresistible to form-filling bots.
+      if (formData.get("company")?.toString().trim()) {
+        return { success: true, message: SENT_MESSAGE };
+      }
+
+      const startedAt = Number(formData.get("started_at"));
+      if (Number.isFinite(startedAt) && startedAt > 0 && Date.now() - startedAt < MIN_FILL_MS) {
+        return { success: true, message: SENT_MESSAGE };
+      }
+
+      // --- 2. Validation ---------------------------------------------------
       const name = formData.get("name")?.toString().trim();
       const email = formData.get("email")?.toString().trim();
       const subject = formData.get("subject")?.toString().trim();
       const messageContent = formData.get("message")?.toString().trim();
 
-      // --- 1. Server-side Validation ---
       if (!name || !email || !subject || !messageContent) {
-        console.error("Validation error: All fields are required.");
         return fail(400, {
           error: true,
           message: "All fields (Name, Email, Subject, Message) are required."
         });
       }
 
-      // Basic email format validation
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        console.error("Validation error: Invalid email format.");
         return fail(400, {
           error: true,
           message: "Please enter a valid email address."
         });
       }
 
-      // --- 2. Save Message to Supabase ---
-      console.log("Attempting to save message to Supabase...");
-      const { data, error: insertError } = await supabaseServer
-        .from("messages") // Ensure you have a 'messages' table in Supabase
-        .insert({
-          sender_name: name,
-          sender_email: email,
-          subject: subject,
-          message_content: messageContent,
-          // 'created_at' and 'read_status' can be handled by Supabase defaults
-        })
-        .select(); // Select the inserted data to confirm success
-
-      if (insertError) {
-        console.error("Supabase insert error:", insertError.message);
-        return fail(500, {
+      // --- 3. Throttle ------------------------------------------------------
+      // Deliberately after validation: a typo'd email should not eat someone's
+      // quota, and rejected input costs nothing to process. What we are
+      // protecting here is the send quota and my inbox.
+      const { allowed } = checkRateLimit(getClientAddress());
+      if (!allowed) {
+        return fail(429, {
           error: true,
-          message: `Failed to save message: ${insertError.message}.`
+          message: `Too many messages sent recently. Please try again in a few minutes, or email me directly at ${CONTACT_FALLBACK}.`
         });
       }
 
-      console.log("Message saved to Supabase successfully:", data);
+      // --- 4. Store and notify, independently ------------------------------
+      const { error: insertError, status } = await supabaseServer.from("messages").insert({
+        sender_name: name,
+        sender_email: email,
+        subject: subject,
+        message_content: messageContent
+        // 'created_at' and 'read_status' come from Supabase defaults.
+      });
 
-      // --- 3. Send Email Notification (Placeholder) ---
-      // In a real application, you would integrate with an email service here
-      // (e.g., SendGrid, Mailgun, Resend, Nodemailer with a transactional provider).
-      // This is a placeholder as direct email sending requires external service configuration.
+      if (insertError) {
+        // PostgREST answers a missing table with a 404 and an empty body, so
+        // every field on the error object is undefined and it logs as `{}`.
+        // The HTTP status is the part that actually identifies the problem:
+        // 404 = table missing, 401/403 = RLS policy rejected the insert.
+        console.error(
+          `[contact] Supabase insert failed (HTTP ${status}):`,
+          insertError.message || insertError.code || "no error detail returned"
+        );
+      }
 
-      console.log("--- SIMULATING EMAIL SENDING ---");
-      console.log(`To: your_email@example.com`); // Replace with your actual email
-      console.log(`From: ${name} <${email}>`);
-      console.log(`Subject: New Contact Form Message: ${subject}`);
-      console.log(`Content: ${messageContent}`);
-      console.log("---------------------------------");
-      console.log("Email sending simulated. Please configure a real email service for production.");
+      const notification = await sendContactNotification({
+        name,
+        email,
+        subject,
+        message: messageContent
+      });
 
-      return { success: true, message: "Your message has been sent successfully!" };
+      // The message is only lost if neither path worked.
+      if (insertError && !notification.sent) {
+        return fail(500, {
+          error: true,
+          message: `Something went wrong sending that. Please email me directly at ${CONTACT_FALLBACK}.`
+        });
+      }
 
+      return { success: true, message: SENT_MESSAGE };
     } catch (err) {
-      console.error("Unexpected error during contact form submission:", err);
+      console.error("[contact] Unexpected error during submission:", err);
       return fail(500, {
         error: true,
         message: "An unexpected error occurred. Please try again later."
@@ -79,6 +112,3 @@ export const actions = {
     }
   }
 };
-
-// No PageServerLoad function is needed for this page as it's just a form.
-// export async function load() { ... }
