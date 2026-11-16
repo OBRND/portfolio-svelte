@@ -11,8 +11,9 @@ const STORAGE_KEY = 'theme';
  * Reading it back here keeps the store in sync with what is actually painted.
  */
 function initialTheme(): Theme {
-	if (typeof document === 'undefined') return 'light';
-	return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+	// Night is the default (see app.html); only an explicit `.light` flips it.
+	if (typeof document === 'undefined') return 'dark';
+	return document.documentElement.classList.contains('light') ? 'light' : 'dark';
 }
 
 export const theme = writable<Theme>(initialTheme());
@@ -35,24 +36,5 @@ export function toggleTheme() {
 			/* ignore */
 		}
 		return next;
-	});
-}
-
-/**
- * Follow the OS preference, but only while the visitor has not made an
- * explicit choice. Once they use the toggle, their pick sticks.
- */
-if (typeof window !== 'undefined' && window.matchMedia) {
-	const query = window.matchMedia('(prefers-color-scheme: dark)');
-	query.addEventListener('change', (event) => {
-		let stored: string | null = null;
-		try {
-			stored = localStorage.getItem(STORAGE_KEY);
-		} catch {
-			/* ignore */
-		}
-		if (stored !== 'light' && stored !== 'dark') {
-			theme.set(event.matches ? 'dark' : 'light');
-		}
 	});
 }

@@ -7,7 +7,7 @@
 
   // Props to pass to the React component
   export let iconSlugs: string[] = [];
-  export let imageArray: string[] = [];
+  export let imageArray: { src: string; id: string; alt?: string }[] = [];
   export let theme: string = 'light';
   export let onIconClick: (slug: string) => void = () => {}; // New prop to pass the click handler
 
@@ -35,7 +35,7 @@
   }
 </script>
 
-<div bind:this={container} style="width: 100%; height: 110%;"></div>
+<div bind:this={container} style="width: 100%; height: 100%; display: grid; place-items: center;"></div>
 
 <style>
   /* Any styles for the container div */

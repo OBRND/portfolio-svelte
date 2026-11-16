@@ -2,8 +2,9 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Cloud, fetchSimpleIcons, renderSimpleIcon } from "react-icon-cloud";
+import { Cloud, renderSimpleIcon } from "react-icon-cloud";
 import { CLOUD_ID } from "./cloudId.js";
+import { BRAND_ICONS } from "../../data/brandIcons.js";
 
 // Simple mock for useTheme (keep this as is, or remove if you truly use a theme context)
 const useTheme = () => ({ theme: 'dark' });
@@ -25,7 +26,7 @@ export const cloudProps = {
       justifyContent: "center",
       alignItems: "center",
       width: "100%",
-      paddingTop: 40,
+      height: "100%",
     },
   },
   options: {
@@ -33,12 +34,18 @@ export const cloudProps = {
     depth: 1,
     wheelZoom: false,
     imageScale: 2,
-    activeCursor: "default",
+    // A hand over each logo, and a ring drawn round the one under the cursor
+    // — the two cues that say "this can be clicked" without any text on the
+    // globe. (`outlineColour` below is that ring.)
+    activeCursor: "pointer",
+    outlineThickness: 2,
+    outlineOffset: 8,
+    outlineRadius: 14,
     tooltip: "native",
     initial: supportsTouch ? [0.04, -0.04] : [0.1, -0.1],
     clickToFront: 500,
     tooltipDelay: 0,
-    outlineColour: "#000",
+    outlineColour: "#ff5b2e",
     // TagCanvas fades tags by depth straight through globalAlpha, and with
     // `depth: 1` (double its own default) the far half of the cloud lands on
     // the stock `minBrightness: 0.1` — 10% opacity, which on a near-black
@@ -54,7 +61,9 @@ export const cloudProps = {
   },
 };
 
-const BG_HEX = { light: "#f3f2ef", dark: "#080510" };
+// The page grounds the globe floats over — see --bg in src/app.css. Icon
+// colours are contrast-checked against these.
+const BG_HEX = { light: "#ece6d9", dark: "#07080c" };
 
 // How much contrast an icon has to clear against the canvas behind it before
 // it gets brightened (dark theme) or deepened (light theme).
@@ -138,6 +147,9 @@ const renderIconElement = (icon, theme = 'light', onIconClick) => {
       minContrastRatio,
       size: 42,
       aProps: {
+        // Lets the stack list ask the cloud to turn this logo to the front
+        // (TagCanvas looks tags up by their anchor's id).
+        id: `tag-${icon.slug}`,
         href: undefined, // Ensure no actual navigation
         target: undefined,
         rel: undefined,
@@ -155,6 +167,7 @@ const renderIconElement = (icon, theme = 'light', onIconClick) => {
     return (
       <a
         key={`custom-${icon.id}`} // Unique key for React list rendering
+        id={`tag-${icon.id}`}
         href="#"
         onClick={(e) => {
           e.preventDefault();
@@ -169,7 +182,7 @@ const renderIconElement = (icon, theme = 'light', onIconClick) => {
             alignItems: 'center',
             height: '42px', // Ensure anchor has same size as icons for consistency
             width: '42px',
-            backgroundColor: theme === "light" ? "#f3f2ef" : "#080510", // Match simple-icon background
+            backgroundColor: theme === "light" ? BG_HEX.light : BG_HEX.dark, // Match simple-icon background
             borderRadius: '50%', // Simple icons often appear circular
             padding: '5px', // Adjust padding for your SVGs
             boxSizing: 'border-box' // Include padding in the element's total width and height
@@ -200,40 +213,27 @@ export default function IconCloudReact({
   initialTheme = 'dark',
   onIconClick
 }) {
-  const [simpleIconsData, setSimpleIconsData] = useState(null);
   const [currentTheme, setCurrentTheme] = useState(initialTheme);
 
   useEffect(() => {
     setCurrentTheme(initialTheme);
   }, [initialTheme]);
 
-  // Fetch simple icons
-  useEffect(() => {
-    if (iconSlugs.length > 0) {
-      fetchSimpleIcons({ slugs: iconSlugs })
-        .then(data => {
-          setSimpleIconsData(data);
-          // console.log("Fetched Simple Icons:", data); // For debugging
-        })
-        .catch(error => {
-          console.error("Error fetching simple icons:", error);
-          setSimpleIconsData(null);
-        });
-    } else {
-      setSimpleIconsData(null);
-    }
-  }, [iconSlugs]);
+  // The marks ship with the page (see brandIcons.js), so the globe is whole
+  // the moment it mounts instead of waiting on a CDN.
+  const simpleIcons = useMemo(
+    () => iconSlugs.map((slug) => BRAND_ICONS[slug]).filter(Boolean),
+    [iconSlugs]
+  );
 
   // --- CRUCIAL CHANGE HERE: Render all icons into React elements in useMemo ---
   const renderedIconElements = useMemo(() => {
     const elements = [];
 
     // Render simple-icons
-    if (simpleIconsData && simpleIconsData.simpleIcons) {
-      Object.values(simpleIconsData.simpleIcons).forEach((icon) => {
-        elements.push(renderIconElement(icon, currentTheme, onIconClick));
-      });
-    }
+    simpleIcons.forEach((icon) => {
+      elements.push(renderIconElement(icon, currentTheme, onIconClick));
+    });
 
     // Render custom images
     if (imageArray && imageArray.length > 0) {
@@ -244,7 +244,7 @@ export default function IconCloudReact({
 
     // Filter out any null elements in case renderIconElement returned null for invalid input
     return elements.filter(Boolean);
-  }, [simpleIconsData, imageArray, currentTheme, onIconClick]);
+  }, [simpleIcons, imageArray, currentTheme, onIconClick]);
 
 
   return (

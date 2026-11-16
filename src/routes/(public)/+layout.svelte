@@ -1,910 +1,777 @@
 <script lang="ts">
+	import '@fontsource-variable/bricolage-grotesque/standard.css';
+	import '@fontsource/instrument-serif/latin-400.css';
+	import '@fontsource/instrument-serif/latin-400-italic.css';
+	import '@fontsource-variable/jetbrains-mono/index.css';
 	import '../../app.css';
 	import '$lib/themes';
-	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+
 	import { onMount } from 'svelte';
-	import { quintOut } from 'svelte/easing';
-	import { reducedMotion } from '$lib/stores/motion';
-	import { scramble } from '$lib/actions/scramble';
-	import { cursorGlow } from '$lib/actions/cursorGlow';
+	import Atmosphere from '$lib/components/Atmosphere.svelte';
+	import Preloader from '$lib/components/Preloader.svelte';
+	import Cursor from '$lib/components/Cursor.svelte';
+	import Clock from '$lib/components/Clock.svelte';
+	import Mark from '$lib/components/Mark.svelte';
+	import { theme, toggleTheme } from '$lib/stores/theme';
+	import { mood, MOODS, type MoodName } from '$lib/stores/stage';
+	import { startScroll, scrollTo, lockScroll } from '$lib/motion/scroll';
+	import { magnetic } from '$lib/actions/magnetic';
+	import { fit } from '$lib/actions/fit';
+	import { person, sections, socials } from '$lib/data/site';
 
 	let { children } = $props();
 
-	const sections = [
-		{ id: 'about', label: 'About' },
-		{ id: 'skills', label: 'Skills' },
-		{ id: 'services', label: 'Services' },
-		{ id: 'projects', label: 'Projects' },
-		{ id: 'contact', label: 'Contact' }
-	];
+	let menuOpen = $state(false);
+	let activeSection = $state('top');
+	let root = $state<HTMLElement | null>(null);
 
-	/**
-	 * Vertical odometer transition for the header's current-section title: the
-	 * outgoing label slides out one way while the incoming one slides in from
-	 * the other, with a light defocus riding along so the swap reads as a
-	 * single continuous motion rather than two separate ones. `y`'s sign
-	 * carries the scroll direction — see the `in:`/`out:` call sites below.
-	 */
-	function titleSlide(_node: HTMLElement, { y = 18, duration = 520 }: { y?: number; duration?: number }) {
-		return {
-			duration: $reducedMotion ? 0 : duration,
-			easing: quintOut,
-			css: (t: number, u: number) => `
-				transform: translate3d(0, ${u * y}px, 0);
-				opacity: ${t};
-				filter: blur(${u * 3}px);
-			`
-		};
+	const rail = [{ id: 'top', label: 'Intro' }, ...sections];
+	const activeIndex = $derived(Math.max(0, rail.findIndex((item) => item.id === activeSection)));
+
+	function setMenu(open: boolean) {
+		if (menuOpen === open) return;
+		menuOpen = open;
+		lockScroll(open);
 	}
 
-	const socials = [
-		{
-			label: 'GitHub',
-			href: 'https://github.com/OBRND',
-			path: 'M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z'
-		},
-		{
-			label: 'LinkedIn',
-			href: 'https://linkedin.com/in/yourusername',
-			path: 'M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z'
-		},
-		{
-			label: 'Telegram',
-			href: 'https://t.me/OBDREAMER',
-			path: 'M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z'
-		},
-		{
-			label: 'Email',
-			href: 'mailto:obsannew@gmail.com',
-			path: 'M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z'
-		}
-	];
-
-	let scrolled = $state(false);
-	let activeSection = $state('about');
-	let menuOpen = $state(false);
-	let scrollProgress = $state(0);
-	let footerEl = $state<HTMLElement | null>(null);
-	let footerHeight = $state(320);
-	let navbarEl = $state<HTMLElement | null>(null);
-
-	/**
-	 * Which `data-divider` (a Section's own "01 Toolkit"-style rule) has most
-	 * recently scrolled up to the header, as an index into `dividerTexts` —
-	 * -1 means none yet, i.e. still above the first one.
-	 */
-	let dividerIndex = $state(-1);
-	let dividerTexts: string[] = [];
-	/** +1 once a later divider becomes active, -1 for an earlier one — the
-	    header title rotator reads this to decide which way to slide. */
-	let titleDir = $state(1);
-
-	/** The brand identity at rest, then whichever divider has reached the header. */
-	const headerTitle = $derived(dividerIndex === -1 ? 'Obsan Diribsa' : (dividerTexts[dividerIndex] ?? 'Obsan Diribsa'));
+	function onKeydown(event: KeyboardEvent) {
+		if (event.key === 'Escape' && menuOpen) setMenu(false);
+	}
 
 	onMount(() => {
+		const stopScroll = startScroll();
+
 		/**
-		 * Scroll-spy via IntersectionObserver, for the nav links' own active
-		 * state (About/Skills/Services/Projects/Contact) — independent of the
-		 * header title rotator below, which tracks individual section dividers
-		 * rather than these five big regions.
+		 * In-page links go through the scroll engine instead of jumping. This is
+		 * a capture listener on the root on purpose: it has to run before
+		 * SvelteKit's own router sees the click, which would otherwise perform
+		 * the native jump first and leave the eased scroll nothing to travel.
+		 */
+		const onClick = (event: MouseEvent) => {
+			if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+			const link = (event.target as Element | null)?.closest?.<HTMLAnchorElement>('a[href^="#"]');
+			const hash = link?.getAttribute('href');
+			if (!hash || hash.length < 2) return;
+			const target = document.querySelector<HTMLElement>(hash);
+			if (!target) return;
+
+			event.preventDefault();
+			const wasOpen = menuOpen;
+			setMenu(false);
+			history.replaceState(history.state, '', hash);
+			// Give the menu a beat to start closing so the page is not seen
+			// racing away underneath a panel that is still fully open.
+			setTimeout(() => scrollTo(target, { duration: wasOpen ? 1.7 : 1.5 }), wasOpen ? 220 : 0);
+		};
+		root?.addEventListener('click', onClick, true);
+
+		/**
+		 * Which section owns the middle of the viewport. One hairline band
+		 * across the centre, so exactly one section is ever "current" — it
+		 * drives both the rail and the atmosphere's lighting.
 		 */
 		const spy = new IntersectionObserver(
 			(entries) => {
 				for (const entry of entries) {
-					if (entry.isIntersecting) activeSection = entry.target.id;
+					if (!entry.isIntersecting) continue;
+					const el = entry.target as HTMLElement;
+					if (el.dataset.section) activeSection = el.dataset.section;
+					const next = el.dataset.mood as MoodName | undefined;
+					if (next && next in MOODS) mood.set(next);
 				}
 			},
-			{ rootMargin: '-30% 0px -60% 0px', threshold: 0 }
+			{ rootMargin: '-50% 0px -50% 0px', threshold: 0 }
 		);
-
-		for (const section of sections) {
-			const el = document.getElementById(section.id);
-			if (el) spy.observe(el);
-		}
-
-		/**
-		 * Header title rotator: each Section on the page stamps its own
-		 * "01 Toolkit" style rule with `data-divider` (see Section.svelte). On
-		 * every scroll frame, the one that has most recently scrolled up to
-		 * the header's bottom edge — the divider with the greatest
-		 * `top <= headerHeight` — becomes the header's title, so the label
-		 * reads as having detached from the page and landed in the header's
-		 * slot exactly when it reaches it.
-		 *
-		 * An IntersectionObserver with a hairline rootMargin can do this too,
-		 * and more cheaply, but it turned out to miss crossings under fast or
-		 * programmatic scrolling in testing — this re-derives the answer from
-		 * real positions on every frame instead, which is a few cheap
-		 * getBoundingClientRect() reads and is unconditionally correct.
-		 */
-		const dividerEls = Array.from(document.querySelectorAll<HTMLElement>('[data-divider]'));
-		dividerTexts = dividerEls.map((el) => el.querySelector('.eyebrow')?.textContent?.trim() ?? '');
-
-		function recomputeDivider() {
-			const headerHeight = navbarEl?.offsetHeight ?? 64;
-			let bestIndex = -1;
-			let bestTop = -Infinity;
-			dividerEls.forEach((el, i) => {
-				if (!dividerTexts[i]) return;
-				const top = el.getBoundingClientRect().top;
-				if (top <= headerHeight && top > bestTop) {
-					bestTop = top;
-					bestIndex = i;
-				}
-			});
-			if (bestIndex !== dividerIndex) {
-				titleDir = bestIndex > dividerIndex ? 1 : -1;
-				dividerIndex = bestIndex;
-			}
-		}
-		recomputeDivider();
-
-		let scrollRaf = 0;
-		const onScroll = () => {
-			scrolled = window.scrollY > 24;
-			const max = document.documentElement.scrollHeight - window.innerHeight;
-			scrollProgress = max > 0 ? Math.min(window.scrollY / max, 1) : 0;
-
-			if (scrollRaf) return;
-			scrollRaf = requestAnimationFrame(() => {
-				scrollRaf = 0;
-				if (dividerEls.length) recomputeDivider();
-			});
-		};
-		onScroll();
-		window.addEventListener('scroll', onScroll, { passive: true });
-
-		// The footer is fixed behind the page; the content below reserves exactly
-		// its height so scrolling to the end reveals it. Measured rather than
-		// hard-coded so it stays correct when the footer wraps at any width.
-		let resize: ResizeObserver | undefined;
-		if (footerEl) {
-			resize = new ResizeObserver(([entry]) => {
-				footerHeight = entry.contentRect.height;
-			});
-			resize.observe(footerEl);
-		}
+		document.querySelectorAll<HTMLElement>('[data-section], [data-mood]').forEach((el) => spy.observe(el));
 
 		return () => {
+			root?.removeEventListener('click', onClick, true);
 			spy.disconnect();
-			if (scrollRaf) cancelAnimationFrame(scrollRaf);
-			window.removeEventListener('scroll', onScroll);
-			resize?.disconnect();
+			stopScroll();
 		};
 	});
-
-	function closeMenu() {
-		menuOpen = false;
-	}
 </script>
 
-<a class="u-skip-link" href="#about">Skip to content</a>
+<svelte:window onkeydown={onKeydown} />
 
-<div class="app" style="--footer-h: {footerHeight}px">
+<div class="site" bind:this={root}>
+	<a class="u-skip-link" href="#about">Skip to content</a>
+
+	<Preloader />
+	<Atmosphere />
+	<Cursor />
+
 	<!--
-		Sits behind the page and is revealed by the spacer below the content.
-		Fixed positioning with a reserved spacer replaces the previous JS transform,
-		which was both broken (its computed values were overwritten by later
-		reactive statements) and a `position: fixed` containing block that trapped
-		every overlay inside it.
+		`mix-blend-mode: difference` rather than a background of its own: the
+		header crosses an ink sky, bone paper and four flat poster colours on the
+		way down, and inverting whatever is behind it is the one treatment that
+		stays legible over all of them without a bar cutting across the type.
 	-->
-	<footer class="site-footer" bind:this={footerEl} use:cursorGlow>
-		<div class="footer-inner">
-			<div class="footer-top">
-				<div class="footer-brand">
-					<p class="footer-name">Obsan Diribsa</p>
-				</div>
+	<header class="bar" class:menu-open={menuOpen}>
+		<a class="brand" href="#top" aria-label="{person.name} — back to top">
+			<Mark size={26} />
+			<span class="brand-name">{person.name}</span>
+		</a>
 
-				<div class="footer-cols">
-					<div class="footer-col">
-						<h2>Navigate</h2>
-						<ul>
-							{#each sections as section}
-								<li><a href="#{section.id}">{section.label}</a></li>
-							{/each}
-						</ul>
-					</div>
+		<div class="bar-actions">
+			<button
+				type="button"
+				class="theme"
+				onclick={toggleTheme}
+				aria-label={$theme === 'dark' ? 'Switch to day' : 'Switch to night'}
+			>
+				<span class="theme-dot" class:day={$theme !== 'dark'} aria-hidden="true"></span>
+				<span class="theme-text">{$theme === 'dark' ? 'Night' : 'Day'}</span>
+			</button>
 
-					<div class="footer-col">
-						<h2>Contact</h2>
-						<ul>
-							<li><a href="mailto:obsannew@gmail.com">obsannew@gmail.com</a></li>
-							<li><a href="tel:+251940844097">+251 940 844 097</a></li>
-							<li><span>Addis Ababa, Ethiopia</span></li>
-						</ul>
-					</div>
-
-					<div class="footer-col">
-						<h2>Elsewhere</h2>
-						<ul class="footer-socials">
-							{#each socials as social}
-								<li>
-									<a
-										href={social.href}
-										target={social.href.startsWith('mailto:') ? null : '_blank'}
-										rel="noopener noreferrer"
-										aria-label={social.label}
-									>
-										<svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true">
-											<path d={social.path} />
-										</svg>
-									</a>
-								</li>
-							{/each}
-						</ul>
-					</div>
-				</div>
-			</div>
-
-			<div class="footer-bottom">
-				<p>© {new Date().getFullYear()} Obsan Diribsa</p>
-				<p>Built with <span class="hl-svelte">SvelteKit</span></p>
-			</div>
+			<button
+				type="button"
+				class="menu-toggle"
+				onclick={() => setMenu(!menuOpen)}
+				aria-expanded={menuOpen}
+				aria-controls="site-menu"
+			>
+				<span class="menu-word" aria-hidden="true">
+					<span>Menu</span>
+					<span>Close</span>
+				</span>
+				<span class="u-sr-only">{menuOpen ? 'Close menu' : 'Open menu'}</span>
+				<span class="burger" aria-hidden="true"><i></i><i></i></span>
+			</button>
 		</div>
-	</footer>
+	</header>
 
-	<div class="page">
-		<!--
-			The ground the whole page is laid over. Sections with `tone="window"`
-			leave their own ground unpainted and reveal this instead — the same
-			move the footer above already makes, turned inward.
-		-->
-		<div class="substrate-track" aria-hidden="true">
-			<div class="page-substrate">
-				<div class="substrate-bloom"></div>
-			</div>
-		</div>
-
-		<header class="navbar" class:scrolled bind:this={navbarEl}>
-			<div class="nav-inner">
-				<div class="brand">
-					<a class="mark" href="#about" onclick={closeMenu}>
-						OB
-						<span class="u-sr-only">Obsan Diribsa — back to top</span>
-					</a>
-
-					<!--
-						The header's "rotatable" title: the brand name at rest, then
-						whichever section is currently in view, one label swapped for the
-						next as a vertical odometer. Purely a visual affordance — the
-						section links below (and the mobile nav) already carry the
-						accessible `aria-current`, so this stays out of the a11y tree
-						rather than announcing every scroll-driven change.
-					-->
-					<div class="title-rotator" aria-hidden="true">
-						{#key headerTitle}
-							<span
-								class="title-slide"
-								in:titleSlide={{ y: titleDir * 18 }}
-								out:titleSlide={{ y: titleDir * -18 }}
-								use:scramble={headerTitle}
-							></span>
-						{/key}
-					</div>
-				</div>
-
-				<nav class="nav-links" aria-label="Sections">
-					<ul>
-						{#each sections as section}
-							<li>
-								<a
-									href="#{section.id}"
-									class:active={activeSection === section.id}
-									aria-current={activeSection === section.id ? 'true' : undefined}
-								>
-									{section.label}
-								</a>
-							</li>
-						{/each}
-					</ul>
-				</nav>
-
-				<div class="nav-actions">
-					<ThemeToggle />
-					<button
-						class="menu-toggle"
-						onclick={() => (menuOpen = !menuOpen)}
-						aria-expanded={menuOpen}
-						aria-controls="mobile-nav"
-						aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+	<!-- Where you are on the page, down the right edge. -->
+	<nav class="rail" aria-label="Sections">
+		<span class="rail-count" aria-hidden="true">
+			{String(activeIndex).padStart(2, '0')}<i>/</i>{String(rail.length - 1).padStart(2, '0')}
+		</span>
+		<ul>
+			{#each rail as item}
+				<li>
+					<a
+						href="#{item.id}"
+						class:active={activeSection === item.id}
+						aria-current={activeSection === item.id ? 'true' : undefined}
 					>
-						<span class="bar" class:open={menuOpen}></span>
-						<span class="bar" class:open={menuOpen}></span>
-					</button>
-				</div>
-			</div>
+						<span class="rail-label">{item.label}</span>
+						<span class="rail-tick" aria-hidden="true"></span>
+					</a>
+				</li>
+			{/each}
+		</ul>
+	</nav>
 
-			<!-- Scroll position, doubling as the navbar's bottom edge. -->
-			<div class="progress" aria-hidden="true">
-				<span style="transform: scaleX({scrollProgress})"></span>
-			</div>
-		</header>
-
-		<nav class="mobile-nav" id="mobile-nav" class:open={menuOpen} aria-label="Sections">
-			<ul>
-				{#each sections as section}
-					<li>
-						<a
-							href="#{section.id}"
-							class:active={activeSection === section.id}
-							onclick={closeMenu}
-							tabindex={menuOpen ? 0 : -1}
-						>
-							{section.label}
+	<nav class="menu" id="site-menu" class:open={menuOpen} aria-label="Main" inert={!menuOpen}>
+		<div class="menu-inner" data-lenis-prevent>
+			<ul class="menu-links">
+				{#each sections as section, i}
+					<li style="--i: {i}">
+						<a href="#{section.id}" class:active={activeSection === section.id}>
+							<span class="menu-index">{String(i + 1).padStart(2, '0')}</span>
+							<span class="menu-label"><span>{section.label}</span></span>
 						</a>
 					</li>
 				{/each}
 			</ul>
-		</nav>
 
-		<main class="main-content">
-			{@render children?.()}
-		</main>
-	</div>
+			<div class="menu-side">
+				<div class="menu-block" style="--i: 2">
+					<span class="menu-cap">Say hi</span>
+					<a class="menu-mail" href="mailto:{person.email}">{person.email}</a>
+				</div>
 
-	<!-- Reserves the footer's height so the page can scroll past it. -->
-	<div class="footer-spacer" aria-hidden="true"></div>
+				<div class="menu-block" style="--i: 3">
+					<span class="menu-cap">Elsewhere</span>
+					<ul class="menu-socials">
+						{#each socials.filter((s) => s.label !== 'Email') as social}
+							<li><a href={social.href} target="_blank" rel="noopener noreferrer">{social.label} ↗</a></li>
+						{/each}
+						<li><a href={person.cv} download>Download CV ↓</a></li>
+					</ul>
+				</div>
+
+				<div class="menu-block" style="--i: 4">
+					<span class="menu-cap">{person.city}, {person.country}</span>
+					<span class="menu-time"><Clock /></span>
+				</div>
+			</div>
+		</div>
+	</nav>
+
+	<main id="top">
+		{@render children?.()}
+	</main>
+
+	<footer class="footer" data-section="contact" data-mood="ember">
+		<div class="footer-inner">
+			<div class="footer-top">
+				<p class="footer-line">
+					Backend, mobile and web,<br />
+					<span class="u-serif">built as one</span> system.
+				</p>
+
+				<ul class="footer-links">
+					{#each sections as section}
+						<li><a href="#{section.id}">{section.label}</a></li>
+					{/each}
+				</ul>
+
+				<ul class="footer-links">
+					{#each socials as social}
+						<li>
+							<a
+								href={social.href}
+								target={social.href.startsWith('mailto:') ? null : '_blank'}
+								rel="noopener noreferrer"
+							>
+								{social.label}
+							</a>
+						</li>
+					{/each}
+				</ul>
+
+				<a class="to-top" href="#top" use:magnetic aria-label="Back to top">
+					<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M12 19V5M5 12l7-7 7 7" />
+					</svg>
+				</a>
+			</div>
+
+			<p class="wordmark" aria-hidden="true"><span use:fit>{person.name}</span></p>
+
+			<div class="footer-bottom u-label">
+				<span>© {new Date().getFullYear()} {person.name}</span>
+				<span>Built with SvelteKit</span>
+			</div>
+		</div>
+	</footer>
 </div>
 
 <style>
-	.app {
+	.site {
 		position: relative;
 		min-height: 100vh;
 	}
 
-	/* ---- Navbar ---------------------------------------------------------- */
-
-	.navbar {
-		position: sticky;
-		top: 0;
-		z-index: var(--z-nav);
-		background: color-mix(in srgb, var(--bg) 72%, transparent);
-		backdrop-filter: blur(16px) saturate(180%);
-		-webkit-backdrop-filter: blur(16px) saturate(180%);
-		border-bottom: 1px solid transparent;
-		transition:
-			background-color var(--dur-base) var(--ease-out),
-			border-color var(--dur-base) var(--ease-out);
-	}
-
-	.navbar.scrolled {
-		background: color-mix(in srgb, var(--bg) 88%, transparent);
-		border-bottom-color: var(--line);
-	}
-
-	.nav-inner {
-		display: flex;
-		align-items: center;
-		gap: var(--sp-4);
-		width: 100%;
-		max-width: var(--maxw);
-		margin-inline: auto;
-		padding: 0.75rem var(--gutter);
-		transition: padding var(--dur-base) var(--ease-out);
-	}
-
-	.navbar.scrolled .nav-inner {
-		padding-block: 0.5rem;
-	}
-
-	.brand {
-		display: flex;
-		align-items: center;
-		gap: 0.7rem;
-		/* flex-grow rather than margin-right:auto — the old shrink-to-fit box
-		   gave .title-rotator's own flex:1 nothing real to grow into, so the
-		   longest divider labels stayed clipped to its min-width regardless
-		   of its max-width. A grown .brand has an actual computed width for
-		   the rotator to fill up to that max-width. */
-		flex: 1;
-		min-width: 0;
-	}
-
-	.mark {
-		display: grid;
-		place-items: center;
-		width: 32px;
-		height: 32px;
-		border-radius: var(--r-sm);
-		background: var(--text);
-		color: var(--bg);
-		font-family: var(--font-display);
-		font-size: 0.75rem;
-		font-weight: 700;
-		letter-spacing: 0.02em;
-		flex-shrink: 0;
-		text-decoration: none;
-		transition: transform var(--dur-fast) var(--ease-out);
-	}
-
-	.mark:hover {
-		transform: translateY(-1px);
-	}
-
-	/* ---- Header title rotator ---------------------------------------------
-	   The brand name at rest, swapped for whichever section is in view as the
-	   page scrolls — one label sliding out while the next slides in, like an
-	   odometer reel. Fixed to one line's height with `overflow: hidden` so the
-	   in-flight pair (outgoing + incoming) stack on top of each other instead
-	   of shoving the header's own height around mid-transition. */
-	.title-rotator {
-		position: relative;
-		flex: 1;
-		/* Every child is `position: absolute`, so the rotator has no in-flow
-		   content to size itself around — without an explicit floor here it
-		   collapses toward zero width and clips whatever it's showing. Upper
-		   bound wide enough for the longest divider label ("04 Selected work:
-		   mobile") without ellipsis-truncating it. */
-		min-width: 9rem;
-		max-width: 18rem;
-		height: 1.4em;
-	}
-
-	.title-slide {
-		position: absolute;
-		inset: 0;
-		display: flex;
-		align-items: center;
-		font-family: var(--font-display);
-		font-size: var(--fs-sm);
-		font-weight: 600;
-		letter-spacing: -0.01em;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		color: var(--text);
-		will-change: transform, opacity, filter;
-	}
-
-	.nav-links {
-		display: none;
-	}
-
-	.nav-links ul {
-		display: flex;
-		align-items: center;
-		gap: 0.25rem;
-		list-style: none;
-	}
-
-	.nav-links a {
-		position: relative;
-		display: block;
-		padding: 0.45rem 0.8rem;
-		border-radius: var(--r-pill);
-		color: var(--text-muted);
-		font-size: var(--fs-sm);
-		font-weight: 500;
-		text-decoration: none;
-		transition:
-			color var(--dur-fast) var(--ease-out),
-			background-color var(--dur-fast) var(--ease-out);
-	}
-
-	.nav-links a:hover {
-		color: var(--text);
-		background: var(--bg-inset);
-	}
-
-	.nav-links a.active {
-		color: var(--text);
-		background: var(--bg-inset);
-	}
-
-	.nav-links a.active::after {
-		content: '';
-		position: absolute;
-		left: 50%;
-		bottom: 0.1rem;
-		width: 14px;
-		height: 2px;
-		border-radius: 2px;
-		background: var(--accent);
-		transform: translateX(-50%);
-	}
-
-	.nav-actions {
-		display: flex;
-		align-items: center;
-		gap: 0.4rem;
-		flex-shrink: 0;
-	}
-
-	.menu-toggle {
-		display: grid;
-		place-content: center;
-		gap: 5px;
-		width: 38px;
-		height: 38px;
-		border-radius: 50%;
-		border: 1px solid var(--line);
-		background: var(--bg-elev-1);
-		cursor: pointer;
-	}
-
-	.bar {
-		display: block;
-		width: 16px;
-		height: 1.5px;
-		border-radius: 2px;
-		background: var(--text);
-		transition: transform var(--dur-base) var(--ease-out);
-	}
-
-	.bar.open:first-child {
-		transform: translateY(3.25px) rotate(45deg);
-	}
-
-	.bar.open:last-child {
-		transform: translateY(-3.25px) rotate(-45deg);
-	}
-
-	.progress {
-		height: 2px;
-		background: transparent;
-		overflow: hidden;
-	}
-
-	.progress span {
-		display: block;
-		height: 100%;
-		background: linear-gradient(90deg, var(--flutter), var(--svelte));
-		transform-origin: 0 50%;
-		transition: transform 120ms linear;
-	}
-
-	/* ---- Mobile menu ------------------------------------------------------ */
-
-	.mobile-nav {
-		position: sticky;
-		top: 0;
-		z-index: calc(var(--z-nav) - 1);
-		overflow: hidden;
-		max-height: 0;
-		background: var(--bg-elev-1);
-		border-bottom: 1px solid transparent;
-		transition:
-			max-height var(--dur-base) var(--ease-out),
-			border-color var(--dur-base) var(--ease-out);
-	}
-
-	.mobile-nav.open {
-		max-height: 24rem;
-		border-bottom-color: var(--line);
-	}
-
-	.mobile-nav ul {
-		list-style: none;
-		padding: var(--sp-3) var(--gutter) var(--sp-4);
-	}
-
-	.mobile-nav a {
-		display: block;
-		padding: 0.75rem 0.5rem;
-		border-bottom: 1px solid var(--line);
-		color: var(--text-muted);
-		font-size: var(--fs-lead);
-		font-weight: 500;
-		text-decoration: none;
-	}
-
-	.mobile-nav a.active {
-		color: var(--text);
-	}
-
-	/* ---- Page & footer reveal --------------------------------------------- */
-
-	/*
-		No ground of its own any more — `.page-substrate` below is what makes the
-		page opaque over the fixed footer. Painting it here as well would put an
-		unbroken sheet behind every section and there would be nothing for a
-		window section to reveal.
-	*/
-	.page {
+	main {
 		position: relative;
 		z-index: var(--z-content);
 	}
 
-	/*
-		Sticky rather than fixed, which matters: a fixed layer would have to sit
-		above --z-footer to show through a window, and being opaque it would then
-		cover the footer and kill the reveal below. Sticky scopes it to `.page`,
-		so it unpins exactly where `.page` ends — which is where the footer
-		reveal already begins. The two compose instead of fighting.
+	/* ---- Header ----------------------------------------------------------- */
 
-		One viewport tall, then pulled back out of flow, so the browser paints a
-		single screen of gradients once instead of a canvas the height of the
-		whole document. It holds still while the content scrolls over it, which
-		is where the parallax comes from — no scroll listener involved.
-	*/
-	/*
-		The track spans `.page` and takes the layer out of flow, so it adds no
-		page height. It also supplies the sticky child's constraint rectangle,
-		which is the part that matters: pulling the layer out of flow with a
-		`margin-bottom: -100dvh` instead lets its *border* box overhang the
-		containing block by a full viewport, and it ends up painted over the
-		footer — swallowing the reveal at the bottom of the page.
-	*/
-	/*
-		Deliberately no `overflow` here. An ancestor with a non-visible overflow
-		becomes the sticky child's scroll container, and since this track never
-		scrolls, the layer would silently stop sticking and sit at the top of
-		the page instead — leaving every window section showing the fixed footer
-		behind it. Clipping happens on `.page-substrate` itself, which is safe.
-	*/
-	.substrate-track {
-		position: absolute;
-		inset: 0;
-		z-index: 0;
-		pointer-events: none;
-	}
-
-	.page-substrate {
-		position: sticky;
-		top: 0;
-		height: 100dvh;
-		background: var(--bg);
-		overflow: hidden;
-	}
-
-	/* The blueprint itself. Masked to fall away toward the edges so it reads as
-	   texture under the content rather than as graph paper. */
-	.page-substrate::before {
-		content: '';
-		position: absolute;
-		inset: 0;
-		background:
-			repeating-linear-gradient(
-				to right,
-				var(--grid-major) 0 1px,
-				transparent 1px calc(var(--grid-pitch) * 5)
-			),
-			repeating-linear-gradient(
-				to bottom,
-				var(--grid-major) 0 1px,
-				transparent 1px calc(var(--grid-pitch) * 5)
-			),
-			repeating-linear-gradient(
-				to right,
-				var(--grid-line) 0 1px,
-				transparent 1px var(--grid-pitch)
-			),
-			repeating-linear-gradient(
-				to bottom,
-				var(--grid-line) 0 1px,
-				transparent 1px var(--grid-pitch)
-			);
-		-webkit-mask-image: radial-gradient(120% 100% at 50% 0%, #000 35%, transparent 92%);
-		mask-image: radial-gradient(120% 100% at 50% 0%, #000 35%, transparent 92%);
-	}
-
-	/*
-		The two brand blooms, on their own element so a transform can move them.
-		Oversized and offset upward so the drift below never exposes an edge.
-	*/
-	.substrate-bloom {
-		position: absolute;
-		inset: -20% 0 -20%;
-		background: var(--ambient);
-	}
-
-	/*
-		Scroll-driven animations run entirely off the compositor — no main-thread
-		work per frame, nothing to throttle. Browsers without support simply keep
-		the static layer, which already parallaxes on its own.
-	*/
-	@supports (animation-timeline: scroll()) {
-		@media (prefers-reduced-motion: no-preference) {
-			.substrate-bloom {
-				animation: bloom-drift linear both;
-				animation-timeline: scroll(root block);
-			}
-		}
-	}
-
-	@keyframes bloom-drift {
-		to {
-			transform: translate3d(0, -12%, 0);
-		}
-	}
-
-	@media (max-width: 768px) {
-		/* Widened so the 1px lines do not turn into moiré on a dense phone
-		   display, where the grid is also proportionally much busier. */
-		.substrate-track {
-			--grid-pitch: 88px;
-		}
-	}
-
-	.main-content {
-		width: 100%;
-	}
-
-	.footer-spacer {
-		height: var(--footer-h);
-	}
-
-	/*
-		Fixed dark regardless of site theme, rather than the previous
-		--bg-sunken (a shade barely off the page background in either theme,
-		so the footer never read as a separate zone). Redeclaring the same
-		token names the rules below already use — --text, --line, etc. — lets
-		every one of them render correctly here without being rewritten
-		individually.
-	*/
-	.site-footer {
+	.bar {
 		position: fixed;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		z-index: var(--z-footer);
-		--bg: #0b0e16;
-		--text: #f4f5f7;
-		--text-muted: #aab0c0;
-		--text-subtle: #7d8496;
-		--line: rgba(255, 255, 255, 0.1);
-		background:
-			radial-gradient(1100px 420px at 12% -20%, rgba(84, 169, 255, 0.16), transparent 60%),
-			radial-gradient(900px 420px at 88% 120%, rgba(255, 107, 61, 0.14), transparent 60%),
-			var(--bg);
-		border-top: 1px solid var(--line);
-		color: var(--text-muted);
+		inset: 0 0 auto;
+		z-index: calc(var(--z-menu) + 1);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--sp-4);
+		height: var(--header-h);
+		padding-inline: var(--gutter);
+		color: #fff;
+		mix-blend-mode: difference;
+		pointer-events: none;
+	}
+
+	/* A blended bar makes the browser composite everything under it into a
+	   separate surface on every scroll frame, which phones pay for dearly. On
+	   a small screen nothing of the opposite colour passes under the header
+	   anyway, so it is set in the page's own ink there. */
+	@media (max-width: 820px), (pointer: coarse) {
+		.bar {
+			mix-blend-mode: normal;
+			color: var(--text);
+		}
+	}
+
+	.bar > :global(*) {
+		pointer-events: auto;
+	}
+
+	/* The menu panel is one flat colour, so it needs ink, not an inversion. */
+	.bar.menu-open {
+		mix-blend-mode: normal;
+		color: #07080c;
+	}
+
+	.brand {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.7rem;
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.brand-name {
+		font-size: var(--fs-sm);
+		font-weight: 500;
+		letter-spacing: -0.02em;
+	}
+
+	.bar-actions {
+		display: flex;
+		align-items: center;
+		gap: clamp(1rem, 2.4vw, 2rem);
+	}
+
+	.theme,
+	.menu-toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.6rem;
+		min-height: 44px;
+		color: inherit;
+		font-family: var(--font-mono);
+		font-size: var(--fs-eyebrow);
+		font-weight: 500;
+		letter-spacing: var(--tracking-eyebrow);
+		text-transform: uppercase;
+	}
+
+	/* A moon that fills out into a sun. */
+	.theme-dot {
+		position: relative;
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		border: 1px solid currentColor;
 		overflow: hidden;
 	}
 
-	/* Echoes the nav's scroll-progress bar at the opposite end of the page. */
-	.site-footer::before {
-		content: '';
-		position: absolute;
-		inset: 0 0 auto;
-		height: 2px;
-		background: linear-gradient(90deg, var(--flutter), var(--svelte));
-		opacity: 0.7;
-	}
-
-	/* Soft glow trailing the cursor over the footer, driven by
-	   src/lib/actions/cursorGlow.ts. Plain white rather than a theme token —
-	   the footer is a fixed dark ground regardless of site theme (see above),
-	   so a low-opacity white reads correctly no matter what theme is active. */
-	.site-footer::after {
+	.theme-dot::after {
 		content: '';
 		position: absolute;
 		inset: 0;
-		background: radial-gradient(
-			420px circle at var(--glow-x, 50%) var(--glow-y, 50%),
-			rgba(255, 255, 255, 0.07),
-			transparent 70%
-		);
-		opacity: var(--glow-opacity, 0);
-		transition: opacity 500ms var(--ease-out);
-		pointer-events: none;
+		background: currentColor;
+		transform: translateX(-55%);
+		transition: transform var(--dur-slow) var(--ease-out);
+	}
+
+	.theme-dot.day::after {
+		transform: translateX(0);
+	}
+
+	.theme-text {
+		display: none;
+	}
+
+	/* Two words stacked in a one-line window; opening the menu rolls the
+	   window from one to the other. */
+	.menu-word {
+		display: grid;
+		height: 1.2em;
+		line-height: 1.2;
+		overflow: hidden;
+		text-align: right;
+	}
+
+	.menu-word span {
+		display: block;
+		transition: transform var(--dur-slow) var(--ease-in-out);
+	}
+
+	.menu-open .menu-word span {
+		transform: translateY(-100%);
+	}
+
+	.burger {
+		display: grid;
+		gap: 6px;
+		width: 26px;
+	}
+
+	.burger i {
+		display: block;
+		height: 1.5px;
+		background: currentColor;
+		transition: transform var(--dur-slow) var(--ease-in-out);
+	}
+
+	.menu-open .burger i:first-child {
+		transform: translateY(3.75px) rotate(45deg);
+	}
+
+	.menu-open .burger i:last-child {
+		transform: translateY(-3.75px) rotate(-45deg);
+	}
+
+	/* ---- Section rail ----------------------------------------------------- */
+
+	.rail {
+		position: fixed;
+		right: var(--gutter);
+		top: 50%;
+		z-index: var(--z-nav);
+		display: none;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.9rem;
+		transform: translateY(-50%);
+		color: #fff;
+		mix-blend-mode: difference;
+	}
+
+	.rail-count {
+		font-family: var(--font-mono);
+		font-size: var(--fs-eyebrow);
+		letter-spacing: 0.1em;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.rail-count i {
+		font-style: normal;
+		opacity: 0.5;
+		margin-inline: 0.25em;
+	}
+
+	.rail ul {
+		list-style: none;
+		display: grid;
+		justify-items: end;
+	}
+
+	.rail a {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 0.6rem;
+		padding-block: 0.34rem;
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.rail-tick {
+		width: 14px;
+		height: 1px;
+		background: currentColor;
+		opacity: 0.45;
+		transform-origin: 100% 50%;
+		transition:
+			transform var(--dur-slow) var(--ease-out),
+			opacity var(--dur-base) ease;
+	}
+
+	.rail-label {
+		font-family: var(--font-mono);
+		font-size: 0.625rem;
+		letter-spacing: var(--tracking-eyebrow);
+		text-transform: uppercase;
+		opacity: 0;
+		transform: translateX(6px);
+		transition:
+			opacity var(--dur-base) ease,
+			transform var(--dur-slow) var(--ease-out);
+	}
+
+	/* Labels only on hover or focus: shown permanently, the current one sat
+	   on top of whatever the page had in the right margin. The count above
+	   and the longer tick already say where you are. */
+	.rail a:hover .rail-label,
+	.rail a:focus-visible .rail-label {
+		opacity: 1;
+		transform: none;
+	}
+
+	.rail a:hover .rail-tick,
+	.rail a.active .rail-tick {
+		opacity: 1;
+		transform: scaleX(2.2);
+	}
+
+	/* ---- Menu overlay ----------------------------------------------------- */
+
+	.menu {
+		position: fixed;
+		inset: 0;
+		z-index: var(--z-menu);
+		background: var(--poster-ember);
+		color: #07080c;
+		clip-path: inset(0 0 100% 0);
+		visibility: hidden;
+		transition:
+			clip-path 900ms var(--ease-in-out),
+			visibility 0s linear 900ms;
+	}
+
+	.menu.open {
+		clip-path: inset(0 0 0 0);
+		visibility: visible;
+		transition:
+			clip-path 900ms var(--ease-in-out),
+			visibility 0s;
+	}
+
+	.menu-inner {
+		display: grid;
+		align-content: space-between;
+		gap: var(--sp-7);
+		height: 100%;
+		padding: calc(var(--header-h) + 1.5rem) var(--gutter) clamp(1.5rem, 4vw, 3rem);
+		overflow-y: auto;
+	}
+
+	.menu-links {
+		list-style: none;
+	}
+
+	.menu-links a {
+		display: flex;
+		align-items: baseline;
+		gap: clamp(0.75rem, 2vw, 2rem);
+		padding-block: 0.05em;
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.menu-index {
+		font-family: var(--font-mono);
+		font-size: var(--fs-eyebrow);
+		letter-spacing: 0.1em;
+		opacity: 0.6;
+		min-width: 1.8em;
+	}
+
+	.menu-label {
+		display: block;
+		overflow: hidden;
+		padding-block: 0.06em 0.1em;
+		font-family: var(--font-display);
+		font-size: clamp(3.2rem, 11.5vh, 8.5rem);
+		font-weight: 300;
+		font-stretch: 82%;
+		line-height: 0.92;
+		letter-spacing: var(--tracking-display);
+	}
+
+	.menu-label span {
+		display: inline-block;
+		transform: translate3d(0, 110%, 0);
+		transition:
+			transform 900ms var(--ease-out),
+			font-weight 500ms var(--ease-out),
+			letter-spacing 500ms var(--ease-out);
+	}
+
+	.menu.open .menu-label span {
+		transform: none;
+		transition-delay: calc(260ms + var(--i) * 70ms), 0ms, 0ms;
+	}
+
+	/* The variable font does the hover: the word puts on weight. */
+	.menu-links a:hover .menu-label span,
+	.menu-links a:focus-visible .menu-label span {
+		font-weight: 600;
+		letter-spacing: -0.035em;
+	}
+
+	.menu-links a.active .menu-label span {
+		font-family: var(--font-serif);
+		font-style: italic;
+		font-stretch: 100%;
+		letter-spacing: -0.03em;
+	}
+
+	.menu-side {
+		display: grid;
+		gap: var(--sp-5);
+	}
+
+	.menu-block {
+		display: grid;
+		gap: 0.35rem;
+		opacity: 0;
+		transform: translateY(16px);
+		transition:
+			opacity 600ms ease,
+			transform 800ms var(--ease-out);
+	}
+
+	.menu.open .menu-block {
+		opacity: 1;
+		transform: none;
+		transition-delay: calc(420ms + var(--i) * 70ms);
+	}
+
+	.menu-cap {
+		font-family: var(--font-mono);
+		font-size: var(--fs-eyebrow);
+		letter-spacing: var(--tracking-eyebrow);
+		text-transform: uppercase;
+		opacity: 0.62;
+	}
+
+	.menu-mail,
+	.menu-time {
+		font-size: clamp(1.15rem, 2vw, 1.6rem);
+		letter-spacing: -0.02em;
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.menu-socials {
+		list-style: none;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.3rem 1.4rem;
+	}
+
+	.menu-socials a {
+		font-size: var(--fs-body);
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.menu-mail,
+	.menu-socials a {
+		background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
+		transition: background-size var(--dur-slow) var(--ease-out);
+	}
+
+	.menu-mail:hover,
+	.menu-socials a:hover {
+		background-size: 100% 1px;
+	}
+
+	.menu :global(:focus-visible) {
+		outline-color: #07080c;
+	}
+
+	/* ---- Footer ----------------------------------------------------------- */
+
+	/* Its own ground, a shade under the page's, so the sky stops here and the
+	   footer reads as the floor the page stands on rather than more of it.
+	   Nothing in it moves with the scroll: it is the last thing on the page,
+	   usually shorter than the screen, so a scrubbed entrance never finished
+	   and left its top edge cut off. */
+	.footer {
+		position: relative;
+		z-index: var(--z-content);
+		border-top: 1px solid var(--line-strong);
+		background:
+			radial-gradient(60% 90% at 100% 100%, color-mix(in srgb, var(--ember) 16%, transparent), transparent 70%),
+			radial-gradient(50% 80% at 0% 100%, color-mix(in srgb, var(--azure) 10%, transparent), transparent 70%),
+			var(--bg-sunken);
 	}
 
 	.footer-inner {
-		position: relative;
-		z-index: 1;
-		width: 100%;
-		max-width: var(--maxw);
-		margin-inline: auto;
-		padding: clamp(2rem, 5vw, 3rem) var(--gutter) clamp(1.25rem, 3vw, 1.75rem);
+		display: grid;
+		gap: clamp(2rem, 6vw, 5rem);
+		padding: clamp(2.5rem, 7vw, 6rem) var(--gutter) clamp(1.25rem, 2.5vw, 2rem);
 	}
 
 	.footer-top {
 		display: grid;
 		gap: var(--sp-6);
-		padding-bottom: var(--sp-6);
+		align-items: start;
 	}
 
-	.footer-name {
+	.footer-line {
 		font-family: var(--font-display);
 		font-size: var(--fs-h3);
-		font-weight: 700;
+		font-weight: 400;
+		line-height: 1.12;
 		letter-spacing: var(--tracking-head);
-		color: var(--text);
 	}
 
-	/* A fixed value rather than the theme-flipping --svelte token: the footer
-	   itself is a fixed dark regardless of site theme (see .site-footer
-	   above), and --svelte-ink in particular is tuned for a light ground, so
-	   it would fail contrast here in light mode. */
-	.hl-svelte {
-		color: #ff6b3d;
-		font-weight: 600;
-	}
-
-	.footer-cols {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-		gap: var(--sp-5);
-	}
-
-	.footer-col h2 {
-		font-family: var(--font-body);
-		font-size: var(--fs-eyebrow);
-		font-weight: 600;
-		letter-spacing: var(--tracking-eyebrow);
-		text-transform: uppercase;
-		color: var(--text-subtle);
-		margin-bottom: var(--sp-3);
-	}
-
-	.footer-col ul {
+	.footer-links {
 		list-style: none;
 		display: grid;
-		gap: 0.4rem;
+		gap: 0.3rem;
 	}
 
-	.footer-col a,
-	.footer-col span {
-		font-size: var(--fs-sm);
+	.footer-links a {
 		color: var(--text-muted);
 		text-decoration: none;
-		transition: color var(--dur-fast) var(--ease-out);
+		transition: color var(--dur-fast) ease;
 	}
 
-	.footer-col a:hover {
+	.footer-links a:hover {
 		color: var(--text);
 	}
 
-	.footer-socials {
-		display: flex !important;
-		gap: 0.4rem;
-	}
-
-	.footer-socials a {
+	.to-top {
 		display: grid;
 		place-items: center;
-		width: 34px;
-		height: 34px;
+		width: 64px;
+		height: 64px;
 		border-radius: 50%;
-		border: 1px solid var(--line);
-		color: var(--text-muted);
+		border: 1px solid var(--line-strong);
+		color: var(--text);
 		transition:
-			background-color var(--dur-fast) var(--ease-out),
-			color var(--dur-fast) var(--ease-out);
+			background-color var(--dur-base) var(--ease-out),
+			color var(--dur-base) var(--ease-out),
+			border-color var(--dur-base) var(--ease-out);
 	}
 
-	.footer-socials a:hover {
+	.to-top:hover {
 		background: var(--text);
+		border-color: var(--text);
 		color: var(--bg);
+	}
+
+	/* Set to the full width of the page: the name as the last thing you see.
+	   The size here is only the starting point — `use:fit` measures the line
+	   and sets it to span the footer exactly. */
+	.wordmark {
+		overflow: hidden;
+		color: var(--text);
+		user-select: none;
+	}
+
+	.wordmark span {
+		display: block;
+		width: max-content;
+		font-family: var(--font-display);
+		font-size: 17vw;
+		font-weight: 300;
+		font-stretch: 100%;
+		line-height: 0.8;
+		letter-spacing: -0.045em;
+		white-space: nowrap;
+		padding-bottom: 0.04em;
 	}
 
 	.footer-bottom {
 		display: flex;
 		flex-wrap: wrap;
 		justify-content: space-between;
-		gap: var(--sp-3);
-		padding-top: var(--sp-5);
+		gap: 0.5rem var(--sp-5);
+		padding-top: var(--sp-4);
 		border-top: 1px solid var(--line);
-		font-size: var(--fs-xs);
-		color: var(--text-subtle);
 	}
 
 	/* ---- Layout ----------------------------------------------------------- */
 
-	@media (min-width: 820px) {
-		.nav-links {
-			display: block;
+	@media (max-width: 520px) {
+		.brand-name {
+			display: none;
+		}
+	}
+
+	@media (min-width: 720px) {
+		.theme-text {
+			display: inline;
 		}
 
-		.menu-toggle,
-		.mobile-nav {
-			display: none;
+		.menu-inner {
+			grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+			align-content: end;
+			align-items: end;
 		}
 
 		.footer-top {
-			grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
-			align-items: start;
+			grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto;
 		}
 	}
 
-	@media (max-width: 400px) {
-		/* The static name was dropped here for space; the rotator earns its
-		   keep even this narrow since it's the one place a scrolled-down
-		   visitor can see what section they're in, so it shrinks instead. */
-		.title-slide {
-			font-size: var(--fs-xs);
+	/* The rail needs a margin to live in; below this it would sit on the type. */
+	@media (min-width: 1100px) and (min-height: 620px) {
+		.rail {
+			display: flex;
 		}
 	}
+
 </style>

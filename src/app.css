@@ -1,118 +1,112 @@
 /* ==========================================================================
-   Design tokens — the single source of truth for the whole site.
+   Design tokens — the single source of truth for the public site.
 
-   Light  = Swiss minimal : off-white ground, near-black type, hairline rules.
-   Dark   = editorial glow: near-black ground, soft accent bloom, white type.
+   The look is "dusk": an ink ground lit by two lights — azure (Flutter, mobile)
+   and ember (SvelteKit, web) — with warm bone type. `Night` is the default;
+   `Day` flips ground and type to bone paper and ink, and deepens both lights
+   so they still read on a light ground.
 
-   `src/app.html` runs a synchronous script that stamps `.light` / `.dark` on
-   <html> before first paint, so `:root` (light) + `:root.dark` is enough and
-   there is no theme flash. No-JS visitors get the light Swiss design.
+   `src/app.html` stamps `.light` / `.dark` on <html> before first paint, so
+   `:root` (day) + `:root.dark` (night) is enough and there is no theme flash.
    ========================================================================== */
 
 :root {
   /* ---- Ground & surfaces ---------------------------------------------- */
-  --bg: #fbfbf9;
-  --bg-elev-1: #ffffff;
-  --bg-elev-2: #ffffff;
-  --bg-inset: #f2f2ef;
-  --bg-sunken: #eeeeea;
+  --bg: #ece6d9;
+  --bg-elev-1: #f5f0e6;
+  --bg-elev-2: #fbf8f1;
+  --bg-inset: #e3dccd;
+  --bg-sunken: #d9d1bf;
+  /* The opaque ground of "inside the screen" — the work gallery. */
+  --panel: #f3eee3;
 
   /* ---- Type ------------------------------------------------------------ */
-  --text: #111113;
-  --text-muted: #55565b;
-  /* Carries eyebrows, meta labels and chip text at 11–13px, so it has to clear
-     4.5:1 against both --bg and --bg-inset. A lighter grey looked better in
-     isolation but failed on every small label. */
-  --text-subtle: #66676f;
-  --text-inverse: #fbfbf9;
+  --text: #0b0c10;
+  --text-muted: #4f4c45;
+  /* Carries the mono micro-labels at 11–12px, so it has to clear 4.5:1
+     against both --bg and --panel. */
+  --text-subtle: #625e56;
+  --text-inverse: #ece6d9;
 
   /* ---- Lines ----------------------------------------------------------- */
-  --line: #e4e4df;
-  --line-strong: #cfcfc8;
-  --line-hairline: rgba(17, 17, 19, 0.08);
+  --line: rgba(11, 12, 16, 0.14);
+  --line-strong: rgba(11, 12, 16, 0.3);
+  --line-hairline: rgba(11, 12, 16, 0.08);
 
-  /* ---- Brand accents --------------------------------------------------- */
-  --flutter: #0468c9;
-  --flutter-ink: #024a92;
-  --flutter-wash: rgba(4, 104, 201, 0.08);
-  --flutter-edge: rgba(4, 104, 201, 0.22);
+  /* ---- The two lights -------------------------------------------------- */
+  --azure: #1c5fe0;
+  --ember: #e8430e;
+  --lilac: #6d4fd6;
 
-  --svelte: #ff3e00;
-  --svelte-ink: #cc3200;
-  --svelte-wash: rgba(255, 62, 0, 0.07);
-  --svelte-edge: rgba(255, 62, 0, 0.22);
+  --flutter: var(--azure);
+  --flutter-ink: #1449b3;
+  --flutter-wash: rgba(28, 95, 224, 0.1);
+  --flutter-edge: rgba(28, 95, 224, 0.3);
 
-  /* The generic accent — sections retint this to their platform colour. */
-  --accent: var(--svelte);
+  --svelte: var(--ember);
+  --svelte-ink: #b9340a;
+  --svelte-wash: rgba(232, 67, 14, 0.1);
+  --svelte-edge: rgba(232, 67, 14, 0.3);
+
+  /* The generic accent — blocks retint this to their platform colour. */
+  --accent: var(--ember);
   --accent-ink: var(--svelte-ink);
   --accent-wash: var(--svelte-wash);
   --accent-edge: var(--svelte-edge);
 
+  /* Poster colours: flat, loud, and the same in both themes — these carry
+     their own ink, so they never depend on the page ground around them. */
+  --poster-azure: #6aa8ff;
+  --poster-ember: #ff5b2e;
+  --poster-lilac: #b7a3ff;
+  --poster-mint: #7fe3c1;
+  --poster-ink: #07080c;
+  /* The one neutral poster flips, so it never dissolves into the page. */
+  --poster-neutral: #0b0c10;
+  --poster-neutral-ink: #ece6d9;
+
   /* ---- Status ---------------------------------------------------------- */
   --ok: #0f7a52;
-  --ok-wash: #e6f5ee;
-  --ok-edge: #b6e2d0;
+  --ok-wash: rgba(15, 122, 82, 0.1);
+  --ok-edge: rgba(15, 122, 82, 0.3);
   --warn: #96610a;
-  --warn-wash: #fdf3e0;
-  --warn-edge: #f0dcae;
+  --warn-wash: rgba(150, 97, 10, 0.1);
+  --warn-edge: rgba(150, 97, 10, 0.3);
   --danger: #c2311f;
-  --danger-wash: #fdecea;
-  --danger-edge: #f5c4bd;
+  --danger-wash: rgba(194, 49, 31, 0.1);
+  --danger-edge: rgba(194, 49, 31, 0.3);
 
   /* ---- Depth ----------------------------------------------------------- */
-  --shadow-sm: 0 1px 2px rgba(17, 17, 19, 0.05);
-  --shadow-md: 0 4px 16px rgba(17, 17, 19, 0.07), 0 1px 3px rgba(17, 17, 19, 0.05);
-  --shadow-lg: 0 18px 48px rgba(17, 17, 19, 0.1), 0 4px 12px rgba(17, 17, 19, 0.06);
-  --shadow-xl: 0 32px 80px rgba(17, 17, 19, 0.14), 0 8px 20px rgba(17, 17, 19, 0.07);
-  --glow: none;
-  --glow-flutter: none;
-  --glow-svelte: none;
-
-  /* Ambient wash painted behind hero / stack sections. */
-  --ambient: radial-gradient(
-    900px 480px at 78% -8%,
-    rgba(4, 104, 201, 0.07),
-    transparent 62%
-  ),
-  radial-gradient(720px 420px at 6% 4%, rgba(255, 62, 0, 0.05), transparent 60%);
-
-  /* ---- Substrate ------------------------------------------------------- */
-  /* The blueprint grid on the pinned layer behind the page (see
-     `.page-substrate` in the public layout). Light reads as paper with a
-     print grid, so it stays well under the hairline rules; dark can carry a
-     little more since it is drawing light on black rather than ink on white. */
-  --grid-line: rgba(17, 17, 19, 0.03);
-  --grid-major: rgba(17, 17, 19, 0.05);
-  --grid-pitch: 64px;
-
-  /* Section motifs (see `motif` in src/lib/components/ui/Section.svelte). These
-     scroll with their section, so they read as a layer in front of the pinned
-     substrate rather than part of it. */
-  --motif-line: rgba(17, 17, 19, 0.075);
-  --motif-dot: rgba(17, 17, 19, 0.13);
+  --shadow-sm: 0 1px 2px rgba(11, 12, 16, 0.06);
+  --shadow-md: 0 6px 20px rgba(11, 12, 16, 0.1);
+  --shadow-lg: 0 24px 60px rgba(11, 12, 16, 0.16);
+  --shadow-xl: 0 40px 100px rgba(11, 12, 16, 0.24);
 
   /* ---- Type system ----------------------------------------------------- */
-  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
-  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
+  --font-display: 'Bricolage Grotesque Variable', 'Helvetica Neue', Arial, sans-serif;
+  --font-body: 'Bricolage Grotesque Variable', 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: 'Instrument Serif', 'Times New Roman', serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
 
-  --fs-display: clamp(2.6rem, 7.2vw, 5.25rem);
-  --fs-h1: clamp(2rem, 4.6vw, 3.25rem);
-  --fs-h2: clamp(1.65rem, 3.4vw, 2.6rem);
-  --fs-h3: clamp(1.15rem, 1.9vw, 1.45rem);
-  --fs-lead: clamp(1.02rem, 1.5vw, 1.2rem);
-  --fs-body: 1rem;
+  /* Display sizes are viewport-driven on purpose: the type *is* the layout. */
+  --fs-mega: clamp(4.5rem, 19.5vw, 23rem);
+  --fs-display: clamp(3.2rem, 11vw, 12rem);
+  --fs-h1: clamp(2.6rem, 7.4vw, 7.5rem);
+  --fs-h2: clamp(2rem, 4.6vw, 4.6rem);
+  --fs-h3: clamp(1.35rem, 2.2vw, 2rem);
+  --fs-lead: clamp(1.1rem, 1.5vw, 1.4rem);
+  --fs-body: 1.0625rem;
   --fs-sm: 0.9375rem;
   --fs-xs: 0.8125rem;
-  --fs-eyebrow: 0.75rem;
+  --fs-eyebrow: 0.6875rem;
 
-  --lh-tight: 1.06;
-  --lh-snug: 1.22;
-  --lh-body: 1.65;
+  --lh-tight: 0.86;
+  --lh-snug: 1.08;
+  --lh-body: 1.55;
 
-  --tracking-display: -0.035em;
-  --tracking-head: -0.02em;
-  --tracking-eyebrow: 0.16em;
+  --tracking-display: -0.032em;
+  --tracking-head: -0.035em;
+  --tracking-eyebrow: 0.14em;
 
   /* ---- Space ----------------------------------------------------------- */
   --sp-1: 0.25rem;
@@ -128,169 +122,105 @@
   --sp-11: 6.5rem;
   --sp-12: 8rem;
 
-  --section-y: clamp(4rem, 9vw, 8rem);
-  --gutter: clamp(1.25rem, 4vw, 2.5rem);
-  --maxw: 1240px;
-  --maxw-prose: 68ch;
+  --section-y: clamp(5rem, 12vw, 11rem);
+  --gutter: clamp(1.25rem, 3.4vw, 3rem);
+  --maxw: 1680px;
+  --maxw-prose: 62ch;
+  --header-h: 4.5rem;
 
   /* ---- Shape ----------------------------------------------------------- */
-  --r-xs: 6px;
-  --r-sm: 10px;
+  --r-xs: 4px;
+  --r-sm: 8px;
   --r-md: 14px;
-  --r-lg: 20px;
-  --r-xl: 28px;
+  --r-lg: 22px;
+  --r-xl: 34px;
   --r-pill: 999px;
 
   /* ---- Motion ---------------------------------------------------------- */
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.76, 0, 0.24, 1);
   --ease-spring: cubic-bezier(0.34, 1.4, 0.5, 1);
-  --dur-fast: 160ms;
-  --dur-base: 280ms;
-  --dur-slow: 520ms;
-  --dur-reveal: 760ms;
+  --dur-fast: 180ms;
+  --dur-base: 340ms;
+  --dur-slow: 700ms;
+  --dur-reveal: 1100ms;
 
   /* ---- Layers ---------------------------------------------------------- */
+  --z-atmosphere: 0;
   --z-footer: 1;
   --z-content: 10;
   --z-nav: 100;
+  --z-menu: 200;
   --z-modal: 1000;
+  --z-cursor: 2000;
+  --z-preloader: 3000;
 
   color-scheme: light;
 }
 
 :root.dark {
-  --bg: #08090c;
-  --bg-elev-1: #101218;
-  --bg-elev-2: #171a22;
-  --bg-inset: #0d0f14;
-  --bg-sunken: #050608;
+  --bg: #07080c;
+  --bg-elev-1: #0f1118;
+  --bg-elev-2: #171a23;
+  --bg-inset: #0b0c12;
+  --bg-sunken: #040507;
+  --panel: #0a0b10;
 
-  --text: #f2f3f5;
-  --text-muted: #a3a7b3;
-  /* Same 4.5:1 requirement as light mode, measured against --bg and
-     --bg-elev-1. The previous value sat at ~4.0:1 on elevated surfaces. */
-  --text-subtle: #838895;
-  --text-inverse: #08090c;
+  --text: #ece6d9;
+  --text-muted: #aaa59a;
+  --text-subtle: #858076;
+  --text-inverse: #07080c;
 
-  --line: #23262f;
-  --line-strong: #333743;
-  --line-hairline: rgba(255, 255, 255, 0.08);
+  --line: rgba(236, 230, 217, 0.14);
+  --line-strong: rgba(236, 230, 217, 0.3);
+  --line-hairline: rgba(236, 230, 217, 0.08);
 
-  --flutter: #54a9ff;
-  --flutter-ink: #8fc6ff;
-  --flutter-wash: rgba(84, 169, 255, 0.1);
-  --flutter-edge: rgba(84, 169, 255, 0.28);
+  --azure: #6aa8ff;
+  --ember: #ff5b2e;
+  --lilac: #b7a3ff;
 
-  --svelte: #ff6b3d;
-  --svelte-ink: #ff9670;
-  --svelte-wash: rgba(255, 107, 61, 0.1);
-  --svelte-edge: rgba(255, 107, 61, 0.28);
+  --flutter-ink: #a3c9ff;
+  --flutter-wash: rgba(106, 168, 255, 0.12);
+  --flutter-edge: rgba(106, 168, 255, 0.34);
 
-  --accent: var(--svelte);
-  --accent-ink: var(--svelte-ink);
-  --accent-wash: var(--svelte-wash);
-  --accent-edge: var(--svelte-edge);
+  --svelte-ink: #ff9a7a;
+  --svelte-wash: rgba(255, 91, 46, 0.12);
+  --svelte-edge: rgba(255, 91, 46, 0.34);
+
+  --poster-neutral: #ece6d9;
+  --poster-neutral-ink: #07080c;
 
   --ok: #4ade9f;
   --ok-wash: rgba(74, 222, 159, 0.1);
-  --ok-edge: rgba(74, 222, 159, 0.26);
+  --ok-edge: rgba(74, 222, 159, 0.3);
   --warn: #f0b429;
   --warn-wash: rgba(240, 180, 41, 0.1);
-  --warn-edge: rgba(240, 180, 41, 0.26);
+  --warn-edge: rgba(240, 180, 41, 0.3);
   --danger: #ff7a6b;
   --danger-wash: rgba(255, 122, 107, 0.1);
-  --danger-edge: rgba(255, 122, 107, 0.26);
+  --danger-edge: rgba(255, 122, 107, 0.3);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 4px 18px rgba(0, 0, 0, 0.55);
-  --shadow-lg: 0 20px 56px rgba(0, 0, 0, 0.6);
-  --shadow-xl: 0 36px 96px rgba(0, 0, 0, 0.7);
-  --glow: 0 0 0 1px var(--line), 0 0 64px -18px var(--accent-edge);
-  --glow-flutter: 0 0 72px -20px rgba(84, 169, 255, 0.55);
-  --glow-svelte: 0 0 72px -20px rgba(255, 107, 61, 0.55);
-
-  --ambient: radial-gradient(
-    1000px 520px at 80% -10%,
-    rgba(84, 169, 255, 0.16),
-    transparent 62%
-  ),
-  radial-gradient(780px 460px at 4% 2%, rgba(255, 107, 61, 0.12), transparent 60%);
-
-  --grid-line: rgba(255, 255, 255, 0.045);
-  --grid-major: rgba(255, 255, 255, 0.075);
-
-  --motif-line: rgba(255, 255, 255, 0.09);
-  --motif-dot: rgba(255, 255, 255, 0.14);
+  --shadow-md: 0 6px 22px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.6);
+  --shadow-xl: 0 40px 110px rgba(0, 0, 0, 0.75);
 
   color-scheme: dark;
 }
 
 /* Platform scoping — drop `.theme-flutter` / `.theme-svelte` on any block and
-   every --accent-* inside it retints. Used by the two project stacks and the
-   two why-cards. */
+   every --accent-* inside it retints. */
 .theme-flutter {
   --accent: var(--flutter);
   --accent-ink: var(--flutter-ink);
   --accent-wash: var(--flutter-wash);
   --accent-edge: var(--flutter-edge);
-  --accent-glow: var(--glow-flutter);
 }
 .theme-svelte {
   --accent: var(--svelte);
   --accent-ink: var(--svelte-ink);
   --accent-wash: var(--svelte-wash);
   --accent-edge: var(--svelte-edge);
-  --accent-glow: var(--glow-svelte);
-}
-
-/* ==========================================================================
-   Legacy aliases — the existing sections paint with these names. Mapping them
-   onto the new tokens keeps every untouched component themed correctly while
-   sections are migrated one at a time. Remove once nothing references them.
-   ========================================================================== */
-:root {
-  --bg-color: var(--bg);
-  --bg-primary: var(--bg);
-  --bg-secondary: var(--bg-inset);
-  --bg-white: var(--bg-elev-1);
-  --bg-form: var(--bg-inset);
-  --bg-inner-form: var(--bg-elev-1);
-  --bg-light-purple: var(--bg-inset);
-
-  --text-color: var(--text);
-  --text-dark: var(--text);
-  --text-medium: var(--text-muted);
-  --text-light: var(--text-inverse);
-  --color-text-secondary: var(--text-muted);
-
-  --border-light: var(--line);
-  --input-border: var(--line-strong);
-  --border-color: var(--line);
-  --focus-border: var(--accent);
-  --shadow-color: rgba(0, 0, 0, 0.1);
-
-  --flutter-blue: var(--flutter);
-  --svelte-orange: var(--svelte);
-
-  --tag-bg: var(--bg-inset);
-  --tag-text: var(--text-muted);
-  --tech-bg: var(--flutter-wash);
-  --tech-text: var(--flutter);
-  --error-red: var(--danger);
-
-  --shadow: var(--shadow-md);
-  --card-border-radius: var(--r-md);
-  --card-padding: var(--sp-7);
-  --image-padding: 1.5rem;
-  --radius: var(--r-md);
-
-  --font-size-base: var(--fs-body);
-  --font-size-lg: var(--fs-lead);
-  --font-size-xl: 1.25rem;
-  --font-size-2xl: 1.5rem;
-  --font-size-3xl: var(--fs-h2);
-  --font-size-4xl: var(--fs-h1);
 }
 
 /* ==========================================================================
@@ -310,7 +240,10 @@
 
 html {
   -webkit-text-size-adjust: 100%;
-  scroll-behavior: smooth;
+  /* Lenis owns smooth scrolling; a CSS `scroll-behavior: smooth` underneath
+     it would animate every one of its per-frame scroll writes a second time. */
+  scroll-behavior: auto;
+  background: var(--bg);
 }
 
 body {
@@ -320,6 +253,7 @@ body {
   font-size: var(--fs-body);
   line-height: var(--lh-body);
   font-weight: 400;
+  font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -333,7 +267,7 @@ h4 {
   font-family: var(--font-display);
   line-height: var(--lh-snug);
   letter-spacing: var(--tracking-head);
-  font-weight: 700;
+  font-weight: 400;
   color: var(--text);
   text-wrap: balance;
 }
@@ -365,17 +299,37 @@ select {
   color: inherit;
 }
 
-/* One visible, consistent focus ring everywhere. Components must not clear it
-   without providing a replacement. */
+button {
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+/* One visible, consistent focus ring everywhere. */
 :focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 3px;
+  outline-offset: 4px;
   border-radius: var(--r-xs);
 }
 
 ::selection {
-  background: var(--accent);
-  color: var(--text-inverse);
+  background: var(--ember);
+  color: #07080c;
+}
+
+/* ---- Lenis ------------------------------------------------------------- */
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis [data-lenis-prevent] {
+  overscroll-behavior: contain;
 }
 
 /* ==========================================================================
@@ -389,23 +343,24 @@ select {
   padding-inline: var(--gutter);
 }
 
-.u-eyebrow {
-  font-family: var(--font-body);
+/* The mono micro-label that annotates everything: section indices, meta,
+   captions. Small, uppercase and tracked, so the giant type has something
+   quiet to sit against. */
+.u-label {
+  font-family: var(--font-mono);
   font-size: var(--fs-eyebrow);
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: var(--tracking-eyebrow);
   text-transform: uppercase;
   color: var(--text-subtle);
 }
 
-.u-prose {
-  max-width: var(--maxw-prose);
-  color: var(--text-muted);
-}
-
-.u-hairline {
-  border: 0;
-  border-top: 1px solid var(--line);
+/* The italic serif accent dropped into grotesk headlines. */
+.u-serif {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.02em;
 }
 
 .u-sr-only {
@@ -422,11 +377,11 @@ select {
 
 /* Skip link — first focusable element in the layout. */
 .u-skip-link {
-  position: absolute;
+  position: fixed;
   left: var(--sp-4);
   top: var(--sp-4);
-  z-index: calc(var(--z-nav) + 1);
-  transform: translateY(-200%);
+  z-index: calc(var(--z-preloader) + 1);
+  transform: translateY(-300%);
   padding: var(--sp-3) var(--sp-5);
   border-radius: var(--r-pill);
   background: var(--text);
@@ -439,19 +394,61 @@ select {
   transform: translateY(0);
 }
 
+/* A pill button. `.solid` is the primary; the default is an outline. */
+.u-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.95rem 1.6rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  color: var(--text);
+  transition:
+    background-color var(--dur-base) var(--ease-out),
+    color var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out);
+}
+.u-btn:hover {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--bg);
+}
+.u-btn.solid {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--bg);
+}
+.u-btn.solid:hover {
+  background: var(--ember);
+  border-color: var(--ember);
+  color: #07080c;
+}
+.u-btn svg {
+  flex-shrink: 0;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.u-btn:hover svg {
+  transform: translate(2px, -2px);
+}
+
 /* ==========================================================================
    Scroll reveal — markup carries `data-reveal`, `use:reveal` (see
    src/lib/actions/reveal.ts) flips it to `in` when the element enters view.
 
-   Scoped under `.js`, which the inline script in app.html adds. That ordering
-   matters: the class lands before first paint so server-rendered content is
-   hidden immediately rather than flashing in and back out on hydration, while
-   no-JS visitors never receive the class and see everything normally.
+   Scoped under `.js`, which the inline script in app.html adds, so the class
+   lands before first paint and no-JS visitors see everything normally.
    ========================================================================== */
 
 .js [data-reveal] {
   opacity: 0;
-  transform: translate3d(0, var(--reveal-y, 20px), 0) scale(var(--reveal-scale, 1));
+  transform: translate3d(0, var(--reveal-y, 28px), 0) scale(var(--reveal-scale, 1));
   transition:
     opacity var(--dur-reveal) var(--ease-out) var(--reveal-delay, 0ms),
     transform var(--dur-reveal) var(--ease-out) var(--reveal-delay, 0ms);
@@ -464,84 +461,61 @@ select {
   will-change: auto;
 }
 
-/* ==========================================================================
-   Tactile press feedback — src/lib/actions/ripple.ts inserts `.u-ripple-clip`
-   as a button's first child and drops a `.u-ripple-dot` into it per press.
-   `.u-ripple-clip` is what actually clips the dot to the button's shape;
-   the action gives the button itself `position: relative` (if it did not
-   already have one) rather than `overflow: hidden`, since a couple of
-   callers rely on an oversized `::after` for hit-area that clipping would
-   also cut off.
-   ========================================================================== */
-
-.u-ripple-clip {
-  position: absolute;
-  inset: 0;
+/*
+  Line reveal: the text rises out from behind its own baseline. The wrapper
+  clips, the inner span travels. Used for every large headline so they all
+  arrive the same way.
+*/
+.u-line {
+  display: block;
   overflow: hidden;
-  border-radius: inherit;
-  pointer-events: none;
+  /* Room for descenders and the italic serif's overhang, which `overflow:
+     hidden` would otherwise shave off. */
+  padding-block: 0.08em 0.14em;
+  margin-block: -0.08em -0.14em;
+  padding-inline: 0.06em;
+  margin-inline: -0.06em;
 }
 
-.u-ripple-dot {
-  position: absolute;
-  border-radius: 50%;
-  background: currentColor;
-  opacity: 0.28;
-  transform: scale(0);
-  animation: u-ripple 550ms ease-out forwards;
+.u-line > span {
+  display: inline-block;
 }
 
-@keyframes u-ripple {
-  to {
-    transform: scale(1);
-    opacity: 0;
-  }
+.js [data-reveal] .u-line > span,
+.js .u-line[data-reveal] > span {
+  transform: translate3d(0, 112%, 0);
+  transition: transform var(--dur-reveal) var(--ease-out) var(--reveal-delay, 0ms);
 }
 
-/* ==========================================================================
-   Cursor wake — src/lib/actions/cursorWake.ts appends `.u-wake` to its host
-   and animates the pooled dots inside it through the Web Animations API, so
-   position, size and opacity are all set from script. Everything static about
-   a dot lives here.
-   ========================================================================== */
-
-.u-wake {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  /* Above the ambient washes the host paints on its own pseudo-elements, but
-     still under the content, which carries its own stacking. */
-  z-index: 0;
+.js [data-reveal='in'] .u-line > span,
+.js .u-line[data-reveal='in'] > span {
+  transform: none;
 }
 
-.u-wake-dot {
-  position: absolute;
-  top: 0;
-  left: 0;
-  border-radius: 50%;
-  opacity: 0;
-  /* A soft spark rather than a hard bead — the same "emitted light" read the
-     orbiting marks around the portrait have. */
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--wake-color, var(--flutter)) 85%, white) 0%,
-    color-mix(in srgb, var(--wake-color, var(--flutter)) 55%, transparent) 45%,
-    transparent 72%
-  );
+/* A block that only hosts line reveals should not fade or slide itself. */
+.js [data-reveal].u-lines,
+.js .u-line[data-reveal] {
+  opacity: 1;
+  transform: none;
+}
+
+.js [data-reveal] .u-line:nth-child(2) > span {
+  transition-delay: calc(var(--reveal-delay, 0ms) + 90ms);
+}
+.js [data-reveal] .u-line:nth-child(3) > span {
+  transition-delay: calc(var(--reveal-delay, 0ms) + 180ms);
+}
+.js [data-reveal] .u-line:nth-child(4) > span {
+  transition-delay: calc(var(--reveal-delay, 0ms) + 270ms);
 }
 
 /* ==========================================================================
-   Reduced motion — every animation added in this redesign collapses to an
-   instant state change here, including the JS-driven ones which read the
-   `reducedMotion` store in src/lib/stores/motion.ts.
+   Reduced motion — every animation collapses to an instant state change,
+   including the JS-driven ones, which read `reducedMotion` in
+   src/lib/stores/motion.ts.
    ========================================================================== */
 
 @media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-
   *,
   *::before,
   *::after {
@@ -551,7 +525,9 @@ select {
     scroll-behavior: auto !important;
   }
 
-  .js [data-reveal] {
+  .js [data-reveal],
+  .js [data-reveal] .u-line > span,
+  .js .u-line[data-reveal] > span {
     opacity: 1;
     transform: none;
   }

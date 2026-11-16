@@ -1,12 +1,25 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import Section from '$lib/components/ui/Section.svelte';
 	import { reveal } from '$lib/actions/reveal';
-	import { ripple } from '$lib/actions/ripple';
+	import { magnetic } from '$lib/actions/magnetic';
+	import { progress } from '$lib/motion/scroll';
+	import { person, socials } from '$lib/data/site';
 
-	let { form } = $props();
+	let { form = null }: { form?: { success?: boolean; error?: boolean; message?: string } | null } = $props();
+
+	/**
+	 * The outcome of the last send. This section is rendered on the home page
+	 * but posts to its own route's action, and SvelteKit only fills the `form`
+	 * prop when the action belongs to the page being viewed — so on the home
+	 * page the result has to be read off the response here instead. `form`
+	 * still covers the no-JS path, which lands on /sections/contact.
+	 */
+	let sent = $state<{ success?: boolean; error?: boolean; message?: string } | null>(null);
+	const outcome = $derived(sent ?? form);
 
 	let isSubmitting = $state(false);
+	let copied = $state(false);
+	let copyTimer: ReturnType<typeof setTimeout>;
 
 	// Stamped on the client after hydration, so a cached SSR page cannot hand a
 	// stale timestamp to the server's minimum-fill-time spam check.
@@ -15,319 +28,334 @@
 		startedAt = Date.now().toString();
 	});
 
-	const channels = [
-		{
-			label: 'Email',
-			value: 'obsannew@gmail.com',
-			href: 'mailto:obsannew@gmail.com',
-			path: 'M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z'
-		},
-		{
-			label: 'Telegram',
-			value: '@OBDREAMER',
-			href: 'https://t.me/OBDREAMER',
-			path: 'M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z'
-		},
-		{
-			label: 'Phone',
-			value: '+251 940 844 097',
-			href: 'tel:+251940844097',
-			path: 'M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.05-.24 11.4 11.4 0 0 0 3.57.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .57 3.57 1 1 0 0 1-.25 1.05z'
+	async function copyEmail() {
+		try {
+			await navigator.clipboard.writeText(person.email);
+			copied = true;
+			clearTimeout(copyTimer);
+			copyTimer = setTimeout(() => (copied = false), 1800);
+		} catch {
+			/* clipboard blocked — the mailto link right beside it still works */
 		}
-	];
+	}
+
+	const marquee = ['Open to full-time', 'Contract', 'Freelance', 'Remote-friendly'];
 </script>
 
-<Section
-	index="06"
-	eyebrow="Get in touch"
-	title="Let's talk about what you're building"
-	lead="Open to full-time roles, contract work and freelance projects. Email and Telegram both reach me directly, and anything sent through the form below lands in the same inbox. I read every message that comes in and usually reply within a day."
-	tone="inset"
->
-	<div class="grid">
-		<!-- Direct channels first: they always work, regardless of the form. -->
-		<aside class="channels" data-reveal use:reveal={{ y: 22 }}>
-			<h3 class="block-label">Reach me directly</h3>
-
-			<ul class="channel-list">
-				{#each channels as channel}
-					<li>
-						<a href={channel.href} target={channel.href.startsWith('http') ? '_blank' : null} rel="noopener noreferrer">
-							<span class="icon" aria-hidden="true">
-								<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-									<path d={channel.path} />
-								</svg>
-							</span>
-							<span class="channel-text">
-								<span class="channel-label">{channel.label}</span>
-								<span class="channel-value">{channel.value}</span>
-							</span>
-							<svg class="chevron" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-								<path d="M7 17 17 7M9 7h8v8" />
-							</svg>
-						</a>
-					</li>
+<!--
+	The page ends on one question and one line to write on. The four boxed
+	inputs became a letter: a few ruled lines, large type, nothing else.
+-->
+<section class="contact" id="contact" use:progress={{ mode: 'view' }} data-section="contact" data-mood="ember">
+	<!-- Availability, running across the top; the scroll sets its position. -->
+	<div class="ticker" aria-hidden="true">
+		<div class="ticker-track">
+			{#each [0, 1, 2] as _}
+				{#each marquee as item}
+					<span>{item}</span><i>✳</i>
 				{/each}
-			</ul>
-
-			<div class="locale">
-				<h3 class="block-label">Based in</h3>
-				<p>Addis Ababa, Ethiopia, <abbr title="East Africa Time, UTC+3">EAT (UTC+3)</abbr></p>
-				<p class="locale-note">Working remotely with teams across other time zones.</p>
-			</div>
-		</aside>
-
-		<div class="form-card" data-reveal use:reveal={{ y: 26, delay: 80 }}>
-			{#if form?.success}
-				<div class="alert success" role="status">
-					<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-						<path d="m5 13 4 4L19 7" />
-					</svg>
-					<p><strong>Message sent.</strong> {form.message || "I'll get back to you shortly."}</p>
-				</div>
-			{/if}
-
-			{#if form?.error}
-				<div class="alert error" role="alert">
-					<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-						<circle cx="12" cy="12" r="9" />
-						<path d="M12 8v5M12 16.5v.01" />
-					</svg>
-					<p>
-						<strong>Couldn't send that.</strong>
-						{form.message || 'Please try again, or email me directly at obsannew@gmail.com.'}
-					</p>
-				</div>
-			{/if}
-
-			<form
-				class="contact-form"
-				method="POST"
-				action="/sections/contact"
-				use:enhance={() => {
-					isSubmitting = true;
-					return async ({ update }) => {
-						isSubmitting = false;
-						await update();
-					};
-				}}
-			>
-				<!-- Spam traps: offscreen rather than display:none, which bots detect. -->
-				<div class="hp" aria-hidden="true">
-					<label for="company">Company</label>
-					<input id="company" name="company" type="text" tabindex="-1" autocomplete="off" />
-				</div>
-				<input type="hidden" name="started_at" value={startedAt} />
-
-				<div class="field">
-					<label for="name">Name <span aria-hidden="true">*</span></label>
-					<input id="name" name="name" type="text" autocomplete="name" required placeholder="Your name" />
-				</div>
-
-				<div class="field">
-					<label for="email-address">Email <span aria-hidden="true">*</span></label>
-					<input
-						id="email-address"
-						name="email"
-						type="email"
-						autocomplete="email"
-						required
-						placeholder="you@company.com"
-					/>
-				</div>
-
-				<div class="field full">
-					<label for="subject">Subject <span aria-hidden="true">*</span></label>
-					<input id="subject" name="subject" type="text" required placeholder="Role, project or question" />
-				</div>
-
-				<div class="field full">
-					<label for="message">Message <span aria-hidden="true">*</span></label>
-					<textarea id="message" name="message" rows="6" required placeholder="A couple of lines about what you have in mind."></textarea>
-				</div>
-
-				<div class="field full actions">
-					<button type="submit" class="submit" disabled={isSubmitting} use:ripple>
-						<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-							<path d="m3 3 3 9-3 9 19-9Z" />
-							<path d="M6 12h13" />
-						</svg>
-						{isSubmitting ? 'Sending…' : 'Send message'}
-					</button>
-					<p class="required-note">All fields required. This goes straight to my inbox, I read everything sent here.</p>
-				</div>
-			</form>
+			{/each}
 		</div>
 	</div>
-</Section>
+	<p class="u-sr-only">Open to full-time roles, contract work and freelance projects.</p>
+
+	<div class="u-shell">
+		<span class="u-label">05 — Contact</span>
+
+		<h2 class="title u-lines" data-reveal use:reveal>
+			<span class="u-line"><span>Let's build</span></span>
+			<span class="u-line"><span><span class="u-serif">something.</span></span></span>
+		</h2>
+
+		<div class="grid">
+			<div class="direct" data-reveal use:reveal={{ y: 24 }}>
+				<div class="mail">
+					<a class="mail-link" href="mailto:{person.email}">{person.email}</a>
+					<button type="button" class="copy u-label" onclick={copyEmail} aria-live="polite">
+						{copied ? 'Copied' : 'Copy'}
+					</button>
+				</div>
+
+				<dl class="facts">
+					{#each socials.filter((s) => s.label !== 'Email') as social}
+						<div>
+							<dt class="u-label">{social.label}</dt>
+							<dd><a href={social.href} target="_blank" rel="noopener noreferrer">{social.handle} ↗</a></dd>
+						</div>
+					{/each}
+					<div>
+						<dt class="u-label">Phone</dt>
+						<dd><a href={person.phoneHref}>{person.phone}</a></dd>
+					</div>
+					<div>
+						<dt class="u-label">Based in</dt>
+						<dd>{person.city}, {person.country}</dd>
+					</div>
+				</dl>
+			</div>
+
+			<div class="letter" data-reveal use:reveal={{ y: 24, delay: 90 }}>
+				{#if outcome?.success}
+					<p class="notice ok" role="status">
+						<span class="u-serif">Sent.</span>
+						{outcome.message || "I'll get back to you shortly."}
+					</p>
+				{/if}
+
+				{#if outcome?.error}
+					<p class="notice bad" role="alert">
+						<span class="u-serif">Not sent.</span>
+						{outcome.message || `Please try again, or email me directly at ${person.email}.`}
+					</p>
+				{/if}
+
+				<form
+					method="POST"
+					action="/sections/contact"
+					use:enhance={() => {
+						isSubmitting = true;
+						sent = null;
+						return async ({ result, formElement }) => {
+							isSubmitting = false;
+							if (result.type === 'success') {
+								sent = { success: true, message: String(result.data?.message ?? '') };
+								formElement.reset();
+							} else if (result.type === 'failure') {
+								sent = { error: true, message: String(result.data?.message ?? '') };
+							} else {
+								sent = { error: true, message: '' };
+							}
+						};
+					}}
+				>
+					<!-- Spam traps: offscreen rather than display:none, which bots detect. -->
+					<div class="hp" aria-hidden="true">
+						<label for="company">Company</label>
+						<input id="company" name="company" type="text" tabindex="-1" autocomplete="off" />
+					</div>
+					<input type="hidden" name="started_at" value={startedAt} />
+
+					<div class="field">
+						<label for="name" class="u-label">Name</label>
+						<input id="name" name="name" type="text" autocomplete="name" required placeholder="Your name" />
+					</div>
+
+					<div class="field">
+						<label for="email-address" class="u-label">Email</label>
+						<input id="email-address" name="email" type="email" autocomplete="email" required placeholder="you@company.com" />
+					</div>
+
+					<div class="field wide">
+						<label for="subject" class="u-label">About</label>
+						<input id="subject" name="subject" type="text" required placeholder="A role, a project, a question" />
+					</div>
+
+					<div class="field wide">
+						<label for="message" class="u-label">Message</label>
+						<textarea id="message" name="message" rows="3" required placeholder="A couple of lines is plenty."></textarea>
+					</div>
+
+					<div class="send wide">
+						<span use:magnetic={{ strength: 0.2 }}>
+							<button type="submit" class="submit" disabled={isSubmitting} data-cursor={isSubmitting ? null : 'Send'}>
+								<span>{isSubmitting ? 'Sending…' : 'Send it'}</span>
+								<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<path d="M7 17 17 7M9 7h8v8" />
+								</svg>
+							</button>
+						</span>
+						<p class="u-label">Usually answered within a day.</p>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+</section>
 
 <style>
+	.contact {
+		--p: 0;
+		position: relative;
+		padding-bottom: var(--section-y);
+		overflow: hidden;
+	}
+
+	/* The sky warms toward the footer's edge. One flat gradient — nothing
+	   here moves or is big enough to cost anything. */
+	.contact::after {
+		content: '';
+		position: absolute;
+		inset: auto 0 0;
+		height: min(46vh, 26rem);
+		z-index: -1;
+		background: linear-gradient(to top, color-mix(in srgb, var(--ember) 20%, transparent), transparent);
+		pointer-events: none;
+	}
+
+	/* ---- Ticker ----------------------------------------------------------- */
+
+	.ticker {
+		margin-bottom: var(--section-y);
+		padding-block: 0.9rem;
+		border-block: 1px solid var(--line);
+		white-space: nowrap;
+		overflow: hidden;
+	}
+
+	.ticker-track {
+		display: inline-flex;
+		align-items: center;
+		gap: 1.6rem;
+		font-family: var(--font-display);
+		font-size: clamp(1.4rem, 3vw, 2.6rem);
+		font-weight: 300;
+		font-stretch: 80%;
+		letter-spacing: -0.04em;
+		line-height: 1;
+		transform: translate3d(calc(var(--p) * -34%), 0, 0);
+		will-change: transform;
+	}
+
+	.ticker i {
+		font-style: normal;
+		font-size: 0.6em;
+		color: var(--ember);
+	}
+
+	/* ---- Title ------------------------------------------------------------ */
+
+	.title {
+		margin-top: var(--sp-5);
+		font-size: clamp(3.6rem, 14.5vw, 17rem);
+		font-weight: 300;
+		font-stretch: 75%;
+		line-height: 0.82;
+		letter-spacing: -0.03em;
+	}
+
+	.title .u-line:last-child {
+		text-align: right;
+	}
+
+	.title .u-serif {
+		font-size: 1.06em;
+		color: var(--ember);
+	}
+
+	/* ---- Layout ----------------------------------------------------------- */
+
 	.grid {
 		display: grid;
-		gap: clamp(1.5rem, 4vw, 3rem);
-		align-items: start;
+		gap: clamp(2.5rem, 6vw, 5rem);
+		margin-top: clamp(3rem, 8vw, 7rem);
 	}
 
-	.block-label {
-		font-family: var(--font-body);
-		font-size: var(--fs-eyebrow);
-		font-weight: 600;
-		letter-spacing: var(--tracking-eyebrow);
-		text-transform: uppercase;
-		color: var(--text-subtle);
-		margin-bottom: var(--sp-4);
+	/* ---- Direct ----------------------------------------------------------- */
+
+	.mail {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 0.4rem 1.2rem;
+		padding-bottom: var(--sp-5);
+		border-bottom: 1px solid var(--line);
 	}
 
-	/* ---- Channels -------------------------------------------------------- */
-
-	.channel-list {
-		list-style: none;
-		display: grid;
-		gap: 0.5rem;
-	}
-
-	.channel-list a {
-		display: grid;
-		grid-template-columns: auto 1fr auto;
-		align-items: center;
-		gap: var(--sp-4);
-		padding: 0.85rem 1rem;
-		border: 1px solid var(--line);
-		border-radius: var(--r-md);
-		background: var(--bg-elev-1);
+	.mail-link {
+		font-size: clamp(1.4rem, 3vw, 2.5rem);
+		font-weight: 350;
+		letter-spacing: -0.04em;
+		line-height: 1.1;
 		text-decoration: none;
-		transition:
-			border-color var(--dur-fast) var(--ease-out),
-			transform var(--dur-fast) var(--ease-out),
-			background-color var(--dur-fast) var(--ease-out);
+		overflow-wrap: anywhere;
+		background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
+		transition: background-size var(--dur-slow) var(--ease-out);
 	}
 
-	.channel-list a:hover {
-		border-color: var(--accent-edge);
-		transform: translateX(3px);
+	.mail-link:hover {
+		background-size: 100% 1px;
 	}
 
-	.icon {
-		display: grid;
-		place-items: center;
-		width: 34px;
-		height: 34px;
-		border-radius: var(--r-sm);
-		background: var(--accent-wash);
-		color: var(--accent-ink);
-	}
-
-	.channel-text {
-		display: grid;
-		min-width: 0;
-	}
-
-	.channel-label {
-		font-size: var(--fs-xs);
-		color: var(--text-subtle);
-	}
-
-	.channel-value {
-		font-size: var(--fs-sm);
-		font-weight: 600;
+	.copy {
+		min-height: 32px;
+		padding: 0.3rem 0.8rem;
+		border: 1px solid var(--line-strong);
+		border-radius: var(--r-pill);
 		color: var(--text);
-		overflow: hidden;
-		text-overflow: ellipsis;
+		transition:
+			background-color var(--dur-base) var(--ease-out),
+			color var(--dur-base) var(--ease-out);
 	}
 
-	.chevron {
-		color: var(--text-subtle);
-		transition: transform var(--dur-fast) var(--ease-out);
+	.copy:hover {
+		background: var(--text);
+		color: var(--bg);
 	}
 
-	.channel-list a:hover .chevron {
-		transform: translate(2px, -2px);
-		color: var(--accent);
-	}
-
-	.locale {
-		margin-top: var(--sp-7);
-		padding-top: var(--sp-6);
-		border-top: 1px solid var(--line);
-	}
-
-	.locale p {
-		font-size: var(--fs-sm);
-		color: var(--text-muted);
-	}
-
-	.locale abbr {
-		text-decoration: none;
-		border-bottom: 1px dotted var(--line-strong);
-		cursor: help;
-	}
-
-	.locale-note {
-		margin-top: 0.35rem;
-		color: var(--text-subtle) !important;
-		font-size: var(--fs-xs) !important;
-	}
-
-	/* ---- Form ------------------------------------------------------------ */
-
-	.form-card {
-		padding: clamp(1.5rem, 4vw, 2.25rem);
-		border: 1px solid var(--line);
-		border-radius: var(--r-lg);
-		background: var(--bg-elev-1);
-		box-shadow: var(--shadow-sm);
-	}
-
-	.alert {
+	.facts {
 		display: grid;
-		grid-template-columns: auto 1fr;
-		gap: var(--sp-3);
-		align-items: start;
-		padding: 0.9rem 1rem;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: var(--sp-5);
+		margin-top: var(--sp-5);
+	}
+
+	.facts dd {
+		margin-top: 0.3rem;
+		font-size: var(--fs-body);
+		letter-spacing: -0.015em;
+	}
+
+	.facts a {
+		text-decoration: none;
+		background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
+		transition: background-size var(--dur-slow) var(--ease-out);
+	}
+
+	.facts a:hover {
+		background-size: 100% 1px;
+	}
+
+	/* ---- Letter ----------------------------------------------------------- */
+
+	.notice {
 		margin-bottom: var(--sp-5);
-		border-radius: var(--r-sm);
+		padding: var(--sp-4) var(--sp-5);
+		border-radius: var(--r-md);
 		border: 1px solid;
-		font-size: var(--fs-sm);
+		font-size: var(--fs-body);
+		line-height: 1.35;
 	}
 
-	.alert svg {
-		margin-top: 0.15rem;
+	.notice .u-serif {
+		font-size: 1.5em;
+		margin-right: 0.3rem;
 	}
 
-	.alert.success {
-		background: var(--ok-wash);
+	.notice.ok {
 		border-color: var(--ok-edge);
+		background: var(--ok-wash);
+	}
+
+	.notice.ok .u-serif {
 		color: var(--ok);
 	}
 
-	.alert.error {
-		background: var(--danger-wash);
+	.notice.bad {
 		border-color: var(--danger-edge);
+		background: var(--danger-wash);
+	}
+
+	.notice.bad .u-serif {
 		color: var(--danger);
 	}
 
-	.alert p {
-		color: var(--text);
-	}
-
-	.alert strong {
-		font-weight: 600;
-	}
-
-	.contact-form {
+	form {
 		display: grid;
-		grid-template-columns: 1fr;
-		gap: var(--sp-4);
+		gap: var(--sp-5) var(--sp-6);
 	}
 
-	.field {
-		display: grid;
-		gap: 0.4rem;
-		min-width: 0;
-	}
-
-	/* Honeypot. Taken out of flow so it occupies no grid track, and pushed
-	   offscreen instead of display:none so naive bots still fill it in. */
+	/* Honeypot. Out of flow so it takes no grid track, and offscreen instead
+	   of display:none so naive bots still fill it in. */
 	.hp {
 		position: absolute;
 		left: -9999px;
@@ -336,79 +364,115 @@
 		overflow: hidden;
 	}
 
-	.field label {
-		font-size: var(--fs-xs);
-		font-weight: 600;
-		color: var(--text-muted);
-	}
-
-	.field label span {
-		color: var(--accent-ink);
+	.field {
+		position: relative;
+		display: grid;
+		gap: 0.3rem;
+		min-width: 0;
 	}
 
 	.field input,
 	.field textarea {
 		width: 100%;
-		padding: 0.7rem 0.85rem;
-		border: 1px solid var(--line-strong);
-		border-radius: var(--r-sm);
-		background: var(--bg);
+		padding: 0.35rem 0 0.7rem;
+		border: 0;
+		border-bottom: 1px solid var(--line-strong);
+		border-radius: 0;
+		background: transparent;
 		color: var(--text);
-		font-size: var(--fs-sm);
-		font-family: inherit;
-		transition:
-			border-color var(--dur-fast) var(--ease-out),
-			box-shadow var(--dur-fast) var(--ease-out);
+		font-family: var(--font-display);
+		font-size: clamp(1.3rem, 2.2vw, 1.9rem);
+		font-weight: 350;
+		letter-spacing: -0.035em;
+		line-height: 1.2;
 	}
 
 	.field textarea {
 		resize: vertical;
-		min-height: 8rem;
+		min-height: 5.5rem;
 	}
 
 	.field input::placeholder,
 	.field textarea::placeholder {
 		color: var(--text-subtle);
+		opacity: 0.75;
+	}
+
+	/* The rule under each line is drawn in the accent as you write on it. */
+	.field::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: 2px;
+		background: var(--ember);
+		transform: scaleX(0);
+		transform-origin: 0 50%;
+		transition: transform var(--dur-slow) var(--ease-out);
+		pointer-events: none;
+	}
+
+	.field:focus-within::after {
+		transform: scaleX(1);
 	}
 
 	.field input:focus-visible,
 	.field textarea:focus-visible {
 		outline: none;
-		border-color: var(--accent);
-		box-shadow: 0 0 0 3px var(--accent-wash);
 	}
 
-	.actions {
+	.field:focus-within label {
+		color: var(--ember);
+	}
+
+	/* Browser autofill paints its own pale background over a dark ground. */
+	.field input:-webkit-autofill {
+		-webkit-text-fill-color: var(--text);
+		transition: background-color 9999s ease-out;
+	}
+
+	.send {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: var(--sp-4);
-		margin-top: var(--sp-2);
+		gap: var(--sp-4) var(--sp-6);
+		margin-top: var(--sp-3);
+	}
+
+	.send > span {
+		display: inline-block;
 	}
 
 	.submit {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.5rem;
-		padding: 0.75rem 1.4rem;
-		border: 0;
+		gap: 0.9rem;
+		padding: 1.15rem 2.2rem;
 		border-radius: var(--r-pill);
 		background: var(--text);
 		color: var(--bg);
-		font-size: var(--fs-sm);
-		font-weight: 600;
-		cursor: pointer;
+		font-family: var(--font-display);
+		font-size: clamp(1.2rem, 1.8vw, 1.6rem);
+		font-weight: 400;
+		letter-spacing: -0.03em;
+		line-height: 1;
 		transition:
-			transform var(--dur-fast) var(--ease-out),
-			opacity var(--dur-fast) var(--ease-out);
+			background-color var(--dur-base) var(--ease-out),
+			color var(--dur-base) var(--ease-out);
 	}
 
 	.submit:hover:not(:disabled) {
-		transform: translateY(-2px);
+		background: var(--ember);
+		color: #07080c;
 	}
 
-	.submit:active:not(:disabled) {
-		transform: translateY(0) scale(0.97);
+	.submit svg {
+		transition: transform var(--dur-slow) var(--ease-out);
+	}
+
+	.submit:hover:not(:disabled) svg {
+		transform: translate(3px, -3px);
 	}
 
 	.submit:disabled {
@@ -416,34 +480,27 @@
 		cursor: progress;
 	}
 
-	.submit svg {
-		transition: transform var(--dur-base) var(--ease-out);
-	}
-
-	.submit:hover:not(:disabled) svg {
-		transform: translateX(3px);
-	}
-
-	.required-note {
-		font-size: var(--fs-xs);
-		color: var(--text-subtle);
-	}
-
-	/* ---- Layout ---------------------------------------------------------- */
-
 	@media (min-width: 640px) {
-		.contact-form {
+		form {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
 
-		.field.full {
+		.wide {
 			grid-column: 1 / -1;
 		}
 	}
 
-	@media (min-width: 900px) {
+	@media (min-width: 980px) {
 		.grid {
 			grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+			align-items: start;
 		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.ticker-track {
+			transform: none;
+		}
+
 	}
 </style>
